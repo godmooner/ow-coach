@@ -1,0 +1,320 @@
+[
+ {
+  "id": "dmon",
+  "name_ko": "D.Mon",
+  "role": "tank",
+  "portrait": "portraits/dmon.png"
+ },
+ {
+  "id": "dva",
+  "name_ko": "D.Va",
+  "role": "tank",
+  "portrait": "portraits/dva.png"
+ },
+ {
+  "id": "domina",
+  "name_ko": "도미나",
+  "role": "tank",
+  "portrait": "portraits/domina.png"
+ },
+ {
+  "id": "doomfist",
+  "name_ko": "둠피스트",
+  "role": "tank",
+  "portrait": "portraits/doomfist.png"
+ },
+ {
+  "id": "hazard",
+  "name_ko": "해저드",
+  "role": "tank",
+  "portrait": "portraits/hazard.png"
+ },
+ {
+  "id": "junkerqueen",
+  "name_ko": "정커퀸",
+  "role": "tank",
+  "portrait": "portraits/junkerqueen.png"
+ },
+ {
+  "id": "mauga",
+  "name_ko": "마우가",
+  "role": "tank",
+  "portrait": "portraits/mauga.png"
+ },
+ {
+  "id": "orisa",
+  "name_ko": "오리사",
+  "role": "tank",
+  "portrait": "portraits/orisa.png"
+ },
+ {
+  "id": "ramattra",
+  "name_ko": "라마트라",
+  "role": "tank",
+  "portrait": "portraits/ramattra.png"
+ },
+ {
+  "id": "reinhardt",
+  "name_ko": "라인하르트",
+  "role": "tank",
+  "portrait": "portraits/reinhardt.png"
+ },
+ {
+  "id": "roadhog",
+  "name_ko": "로드호그",
+  "role": "tank",
+  "portrait": "portraits/roadhog.png"
+ },
+ {
+  "id": "sigma",
+  "name_ko": "시그마",
+  "role": "tank",
+  "portrait": "portraits/sigma.png"
+ },
+ {
+  "id": "winston",
+  "name_ko": "윈스턴",
+  "role": "tank",
+  "portrait": "portraits/winston.png"
+ },
+ {
+  "id": "wreckingball",
+  "name_ko": "레킹볼",
+  "role": "tank",
+  "portrait": "portraits/wreckingball.png"
+ },
+ {
+  "id": "zarya",
+  "name_ko": "자리야",
+  "role": "tank",
+  "portrait": "portraits/zarya.png"
+ },
+ {
+  "id": "anran",
+  "name_ko": "안란",
+  "role": "damage",
+  "portrait": "portraits/anran.png"
+ },
+ {
+  "id": "ashe",
+  "name_ko": "애쉬",
+  "role": "damage",
+  "portrait": "portraits/ashe.png"
+ },
+ {
+  "id": "bastion",
+  "name_ko": "바스티온",
+  "role": "damage",
+  "portrait": "portraits/bastion.png"
+ },
+ {
+  "id": "cassidy",
+  "name_ko": "캐서디",
+  "role": "damage",
+  "portrait": "portraits/cassidy.png"
+ },
+ {
+  "id": "echo",
+  "name_ko": "에코",
+  "role": "damage",
+  "portrait": "portraits/echo.png"
+ },
+ {
+  "id": "emre",
+  "name_ko": "엠레",
+  "role": "damage",
+  "portrait": "portraits/emre.png"
+ },
+ {
+  "id": "freya",
+  "name_ko": "프레야",
+  "role": "damage",
+  "portrait": "portraits/freya.png"
+ },
+ {
+  "id": "genji",
+  "name_ko": "겐지",
+  "role": "damage",
+  "portrait": "portraits/genji.png"
+ },
+ {
+  "id": "hanzo",
+  "name_ko": "한조",
+  "role": "damage",
+  "portrait": "portraits/hanzo.png"
+ },
+ {
+  "id": "junkrat",
+  "name_ko": "정크랫",
+  "role": "damage",
+  "portrait": "portraits/junkrat.png"
+ },
+ {
+  "id": "mei",
+  "name_ko": "메이",
+  "role": "damage",
+  "portrait": "portraits/mei.png"
+ },
+ {
+  "id": "pharah",
+  "name_ko": "파라",
+  "role": "damage",
+  "portrait": "portraits/pharah.png"
+ },
+ {
+  "id": "reaper",
+  "name_ko": "리퍼",
+  "role": "damage",
+  "portrait": "portraits/reaper.png"
+ },
+ {
+  "id": "sion",
+  "name_ko": "시온",
+  "role": "damage",
+  "portrait": "portraits/sion.png"
+ },
+ {
+  "id": "sierra",
+  "name_ko": "시에라",
+  "role": "damage",
+  "portrait": "portraits/sierra.png"
+ },
+ {
+  "id": "sojourn",
+  "name_ko": "소전",
+  "role": "damage",
+  "portrait": "portraits/sojourn.png"
+ },
+ {
+  "id": "soldier76",
+  "name_ko": "솔저: 76",
+  "role": "damage",
+  "portrait": "portraits/soldier76.png"
+ },
+ {
+  "id": "sombra",
+  "name_ko": "솜브라",
+  "role": "damage",
+  "portrait": "portraits/sombra.png"
+ },
+ {
+  "id": "symmetra",
+  "name_ko": "시메트라",
+  "role": "damage",
+  "portrait": "portraits/symmetra.png"
+ },
+ {
+  "id": "torbjorn",
+  "name_ko": "토르비욘",
+  "role": "damage",
+  "portrait": "portraits/torbjorn.png"
+ },
+ {
+  "id": "tracer",
+  "name_ko": "트레이서",
+  "role": "damage",
+  "portrait": "portraits/tracer.png"
+ },
+ {
+  "id": "vendetta",
+  "name_ko": "벤데타",
+  "role": "damage",
+  "portrait": "portraits/vendetta.png"
+ },
+ {
+  "id": "venture",
+  "name_ko": "벤처",
+  "role": "damage",
+  "portrait": "portraits/venture.png"
+ },
+ {
+  "id": "widowmaker",
+  "name_ko": "위도우메이커",
+  "role": "damage",
+  "portrait": "portraits/widowmaker.png"
+ },
+ {
+  "id": "ana",
+  "name_ko": "아나",
+  "role": "support",
+  "portrait": "portraits/ana.png"
+ },
+ {
+  "id": "baptiste",
+  "name_ko": "바티스트",
+  "role": "support",
+  "portrait": "portraits/baptiste.png"
+ },
+ {
+  "id": "brigitte",
+  "name_ko": "브리기테",
+  "role": "support",
+  "portrait": "portraits/brigitte.png"
+ },
+ {
+  "id": "illari",
+  "name_ko": "일리아리",
+  "role": "support",
+  "portrait": "portraits/illari.png"
+ },
+ {
+  "id": "jetpackcat",
+  "name_ko": "제트팩 캣",
+  "role": "support",
+  "portrait": "portraits/jetpackcat.png"
+ },
+ {
+  "id": "juno",
+  "name_ko": "주노",
+  "role": "support",
+  "portrait": "portraits/juno.png"
+ },
+ {
+  "id": "kiriko",
+  "name_ko": "키리코",
+  "role": "support",
+  "portrait": "portraits/kiriko.png"
+ },
+ {
+  "id": "lifeweaver",
+  "name_ko": "라이프위버",
+  "role": "support",
+  "portrait": "portraits/lifeweaver.png"
+ },
+ {
+  "id": "lucio",
+  "name_ko": "루시우",
+  "role": "support",
+  "portrait": "portraits/lucio.png"
+ },
+ {
+  "id": "mercy",
+  "name_ko": "메르시",
+  "role": "support",
+  "portrait": "portraits/mercy.png"
+ },
+ {
+  "id": "mizuki",
+  "name_ko": "미즈키",
+  "role": "support",
+  "portrait": "portraits/mizuki.png"
+ },
+ {
+  "id": "moira",
+  "name_ko": "모이라",
+  "role": "support",
+  "portrait": "portraits/moira.png"
+ },
+ {
+  "id": "wuyang",
+  "name_ko": "우양",
+  "role": "support",
+  "portrait": "portraits/wuyang.png"
+ },
+ {
+  "id": "zenyatta",
+  "name_ko": "젠야타",
+  "role": "support",
+  "portrait": "portraits/zenyatta.png"
+ }
+]
