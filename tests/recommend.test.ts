@@ -29,7 +29,7 @@ test('fractional scores sum in the candidate-to-enemy direction', () => {
   const fixture: Matchups = {genji: {domina: -0.5, ashe: 3, bastion: 3, ana: 0, mercy: 2}};
   const results = recommend(heroes, fixture, enemies, 'damage');
   assert.equal(results.length, heroes.filter(hero => hero.role === 'damage').length);
-  assert.equal(results.find(row => row.hero.id === 'genji')?.score, 7.5);
+  assert.equal(results.find(row => row.hero.id === 'genji')?.score, 7);
   assert.deepEqual(results, recommend(heroes, fixture, [...enemies].reverse(), 'damage'));
   assert.equal(formatScore(-2.5), '−2.5');
   assert.equal(formatScore(1.5), '+1.5');
@@ -41,7 +41,7 @@ test('missing rows stay eligible; mirror is zero; ties keep hero-list order', ()
   const results = recommend(heroes, minimal, enemies, 'damage');
   assert.equal(results.length, heroes.filter(hero => hero.role === 'damage').length);
   assert.equal(results[0].hero.id, 'ashe');
-  assert.equal(results[0].score, 0.5);
+  assert.equal(results[0].score, 1);
   const ties = recommend(heroes, {}, enemies, 'damage');
   assert.deepEqual(ties.slice(0, 3).map(row => row.hero.id), heroes.filter(hero => hero.role === 'damage').slice(0, 3).map(hero => hero.id));
   assert.ok(ties.every(row => row.rank === 1 && row.score === 0));
@@ -70,12 +70,20 @@ test('the expanded data preserves all 1,190 MVP 0.3 relations', () => {
   assert.equal(checked, 1190);
 });
 
-test('damage scores, ranks and ordering match the unmodified 0.3 engine on identical data', () => {
+test('damage differs from the 0.3 baseline only by one extra enemy-tank term', () => {
   // Snapshots were captured before changing recommend(), for both data versions.
   // The 16 teams cover every hero as an enemy, including newly filled relations.
   assert.equal(new Set(baseline.cases.flatMap(item => item.enemies)).size, heroes.length);
   for (const { enemies, legacy, expanded } of baseline.cases) {
-    for (const [data, expected] of [[legacyMatchups, legacy], [matchups, expanded]] as const) {
+    const tankId = enemies.find(id => heroes.find(hero => hero.id === id)?.role === 'tank')!;
+    for (const [data, unweighted] of [[legacyMatchups, legacy], [matchups, expanded]] as const) {
+      const weighted = unweighted.map(([id, score]) => ({ id, score: score + (data[id]?.[tankId] ?? 0) }))
+        .sort((a, b) => b.score - a.score || heroes.findIndex(hero => hero.id === a.id) - heroes.findIndex(hero => hero.id === b.id));
+      let rank = 0;
+      const expected = weighted.map((row, index) => {
+        if (index === 0 || row.score !== weighted[index - 1].score) rank = index + 1;
+        return [row.id, row.score, rank];
+      });
       const actual = recommend(heroes, data, enemies, 'damage').map(row => [row.hero.id, row.score, row.rank]);
       assert.deepEqual(actual, expected, enemies.join(', '));
     }
@@ -102,13 +110,30 @@ test('tank selection triples only the enemy tank term, including fractional scor
   assert.deepEqual(results, recommend(heroes, matchups, [...enemies].reverse(), 'tank'));
 });
 
-test('damage and support do not apply a tank or other enemy weight', () => {
+test('damage and support double only the enemy tank term', () => {
   const enemies = ['dmon', 'ashe', 'genji', 'ana', 'mercy'];
   const row = { dmon: 0.5, ashe: -1, genji: 2, ana: -2, mercy: 3 };
   const fixture: Matchups = { hanzo: row, zenyatta: row };
-  // The same five terms total 2.5 for both roles; weighting the tank gives 3.5.
-  assert.equal(recommend(heroes, fixture, enemies, 'damage').find(item => item.hero.id === 'hanzo')?.score, 2.5);
-  assert.equal(recommend(heroes, fixture, enemies, 'support').find(item => item.hero.id === 'zenyatta')?.score, 2.5);
+  // 0.5 × 2 - 1 + 2 - 2 + 3 = 3. Both other role subtotals are nonzero.
+  assert.equal(recommend(heroes, fixture, enemies, 'damage').find(item => item.hero.id === 'hanzo')?.score, 3);
+  assert.equal(recommend(heroes, fixture, enemies, 'support').find(item => item.hero.id === 'zenyatta')?.score, 3);
+});
+
+test('tank scores, ranks and tie order match unchanged MVP 0.4 across all enemy heroes', () => {
+  const baseline: { cases: { enemies: string[]; expected: [string, number, number][] }[] } =
+    JSON.parse(readFileSync(new URL('./fixtures/recommend-tank-v0.4.json', import.meta.url), 'utf8'));
+  assert.equal(new Set(baseline.cases.flatMap(item => item.enemies)).size, heroes.length);
+  for (const { enemies, expected } of baseline.cases) {
+    assert.deepEqual(recommend(heroes, matchups, enemies, 'tank').map(row => [row.hero.id, row.score, row.rank]), expected);
+  }
+});
+
+test('real-data damage and support totals match the hand calculation with tank weight two', () => {
+  const enemies = ['dmon', 'ashe', 'genji', 'ana', 'mercy'];
+  // Junkrat: 3 × 2 - 2 + 0 + 2 + 2 = 8 (MVP 0.4: 5).
+  assert.equal(recommend(heroes, matchups, enemies, 'damage').find(row => row.hero.id === 'junkrat')?.score, 8);
+  // Kiriko: 2 × 2 + 0 + 0 + 3 + 0 = 7 (MVP 0.4: 5).
+  assert.equal(recommend(heroes, matchups, enemies, 'support').find(row => row.hero.id === 'kiriko')?.score, 7);
 });
 
 test('mirror terms stay zero and missing relations and ties work for every role', () => {

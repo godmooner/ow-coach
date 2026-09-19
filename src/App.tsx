@@ -1,52 +1,52 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import heroData from '../data/build/heroes.json';
 import matchupData from '../data/build/matchups.json';
-import { ROLE_LIMITS, recommend, formatScore, toggleHero } from './recommend';
+import { ROLE_LIMITS, ENEMY_WEIGHT, recommend, formatScore, toggleHero } from './recommend';
 import type { Hero, Role, Matchups } from './recommend';
+import { Portrait, RoleIcon } from './HeroVisuals';
+import { MostPicker, MostSummary } from './MostPicker';
+import { emptyMostByRole, loadMost, saveMost } from './most';
+import { filterRecommendations, gradeForScore } from './recommendationView';
 
 const heroes = heroData as Hero[];
 const matchups: Matchups = matchupData;
 const roles: Role[] = ['tank', 'damage', 'support'];
 const roleNames: Record<Role, string> = { tank: '탱커', damage: '딜러', support: '힐러' };
 
-function RoleIcon({ role }: { role: Role }) {
-  return <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    {role === 'tank' ? <path d="M12 3 20 6v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z" stroke="currentColor" strokeWidth="1.8" /> :
-     role === 'damage' ? <><path d="M5 20V8l2-4 2 4v12M10 20V8l2-4 2 4v12M15 20V8l2-4 2 4v12" stroke="currentColor" strokeWidth="1.8" /></> :
-     <path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3Z" fill="currentColor" />}
-  </svg>;
-}
-
-function Portrait({ hero }: { hero: Hero }) {
-  const [failed, setFailed] = useState(false);
-  const portable = (window as Window & { __OW_PORTRAITS__?: Record<string, string> }).__OW_PORTRAITS__;
-  if (failed) return <span className="portrait-fallback" aria-hidden="true">{hero.name_ko.slice(0, 2)}</span>;
-  return <img className="portrait" src={portable?.[hero.id] ?? `${import.meta.env.BASE_URL}${hero.portrait}`}
-    alt="" draggable={false} onError={() => setFailed(true)} />;
-}
-
 export default function App() {
   const [myRole, setMyRole] = useState<Role | null>(null);
+  const [selectingMost, setSelectingMost] = useState(true);
+  const [mostByRole, setMostByRole] = useState(() => {
+    try { return loadMost(heroes, window.localStorage); }
+    catch { return emptyMostByRole(); }
+  });
+  const [storageAvailable, setStorageAvailable] = useState(true);
+  useEffect(() => {
+    try { saveMost(mostByRole, window.localStorage); setStorageAvailable(true); }
+    catch { setStorageAvailable(false); }
+  }, [mostByRole]);
   const [selected, setSelected] = useState<string[]>([]);
   const selectedHeroes = selected.map(id => heroes.find(hero => hero.id === id)!);
-  const results = myRole ? recommend(heroes, matchups, selected, myRole).slice(0, 3) : [];
+  const preferredIds = myRole ? mostByRole[myRole].ids : [];
+  const candidateCount = myRole ? preferredIds.length || heroes.filter(hero => hero.role === myRole).length : 0;
+  const results = myRole ? filterRecommendations(recommend(heroes, matchups, selected, myRole), preferredIds).slice(0, 3) : [];
   const complete = selected.length === 5;
   const counts = Object.fromEntries(roles.map(role => [role, selectedHeroes.filter(hero => hero.role === role).length])) as Record<Role, number>;
   const choose = (hero: Hero) => setSelected(previous => toggleHero(previous, hero, heroes));
 
   return <div className="app-shell">
     <header className="topbar">
-      <div className="brand"><span className="brand-mark" aria-hidden="true">OW</span><span>COACH</span><span className="brand-divider" /><span className="page-name">{myRole ? `${roleNames[myRole]} 추천` : '역할군 선택'}</span></div>
-      <span className="version-label">MVP 0.4</span>
+      <div className="brand"><span className="brand-mark" aria-hidden="true">OW</span><span>COACH</span><span className="brand-divider" /><span className="page-name">{myRole ? `${roleNames[myRole]} ${selectingMost ? '모스트 선택' : '추천'}` : '역할군 선택'}</span></div>
+      <span className="version-label">MVP 0.5</span>
     </header>
 
     {myRole === null ? <main className="role-selection" aria-labelledby="role-selection-title">
       <span className="eyebrow">YOUR ROLE</span>
       <h1 id="role-selection-title">내 역할군을 선택하세요</h1>
-      <p>플레이할 역할군을 고르면 상대 조합을 선택할 수 있습니다.</p>
+      <p>플레이할 역할군을 고른 뒤 모스트를 선택하세요.</p>
       <div className="role-options">
         {roles.map(role => <button key={role} type="button" className={`role-option ${role}`}
-          aria-label={`${roleNames[role]} 선택`} onClick={() => setMyRole(role)}>
+          aria-label={`${roleNames[role]} 선택`} onClick={() => { setMyRole(role); setSelectingMost(true); }}>
           <RoleIcon role={role} /><span>{roleNames[role]}</span>
           <span className="role-option-count">{heroes.filter(hero => hero.role === role).length}명</span>
         </button>)}
@@ -56,6 +56,11 @@ export default function App() {
       <span><RoleIcon role={myRole} />내 역할 · <strong>{roleNames[myRole]}</strong></span>
       <button className="reset-button" type="button" onClick={() => setMyRole(null)}>역할 바꾸기</button>
     </div>
+    {selectingMost ? <MostPicker heroes={heroes.filter(hero => hero.role === myRole)} roleName={roleNames[myRole]}
+      storageAvailable={storageAvailable}
+      selection={mostByRole[myRole]} onChange={next => setMostByRole(previous => ({ ...previous, [myRole]: next }))}
+      onComplete={() => setSelectingMost(false)} /> : <>
+    <MostSummary heroes={heroes} selection={mostByRole[myRole]} onEdit={() => setSelectingMost(true)} />
     <main className="workspace">
       <section className="selection-panel" aria-labelledby="selection-title">
         <div className="section-heading">
@@ -102,23 +107,30 @@ export default function App() {
         <div className="recommendation-heading"><span className="eyebrow">YOUR NEXT PICK</span><h2 id="recommendation-title">추천 {roleNames[myRole]}</h2><p>상대 조합에 대한 상성 점수순</p></div>
         <div className="results" aria-live="polite" aria-atomic="true" data-testid="results">
           {complete ? <>
-            <div className="results-caption"><span>TOP 3</span><span>총점</span></div>
-            {results.map((result, index) => <article key={result.hero.id} className={`result-card ${index === 0 ? 'first' : ''}`}
+            <div className="results-caption"><span>TOP {results.length}</span><span>등급 · 총점</span></div>
+            {results.map((result, index) => {
+              const grade = gradeForScore(result.score, myRole);
+              return <article key={result.hero.id} className={`result-card ${index === 0 ? 'first' : ''}`}
               data-result-id={result.hero.id} data-score={result.score}>
               <div className="result-portrait"><Portrait hero={result.hero} /><span className="rank">{String(result.rank).padStart(2, '0')}</span></div>
               <div className="result-name"><span>{index === 0 ? '추천 픽' : '다른 선택'}</span><h3>{result.hero.name_ko}</h3></div>
-              <div className={`score ${result.score < 0 ? 'negative' : result.score === 0 ? 'neutral' : ''}`}>{formatScore(result.score)}<span>점</span></div>
-            </article>)}
-            <p className="tie-note">동점은 같은 순위로 표시합니다.</p>
+              <div className="result-grade">
+                <strong className={`grade-label grade-${grade.level}`} data-testid="grade">{grade.label}</strong>
+                <span className="score">{formatScore(result.score)}<span>점</span></span>
+              </div>
+            </article>;
+            })}
+            <p className="tie-note">동점은 같은 순위로 표시합니다. 등급은 역할별 고정 기준입니다.</p>
           </> : <div className="empty-results">
             <svg className="crosshair" viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="32" r="19" stroke="currentColor" strokeWidth="1.5"/><path d="M32 4v14m0 28v14M4 32h14m28 0h14" stroke="currentColor" strokeWidth="2"/><circle cx="32" cy="32" r="3" fill="currentColor"/></svg>
             <h3>상대 조합을 완성하세요</h3><p>{5 - selected.length}명을 더 선택하면<br />추천 {roleNames[myRole]}가 표시됩니다.</p>
             <div className="selection-progress" aria-hidden="true">{Array.from({ length: 5 }, (_, index) => <span key={index} className={index < selected.length ? 'on' : ''} />)}</div>
           </div>}
         </div>
-        <div className="recommendation-footer"><span className="footer-line" /><p>미입력 상성은 0점으로 계산</p><p className="data-note">{roleNames[myRole]} {heroes.filter(hero => hero.role === myRole).length}명 · {myRole === 'tank' ? '상대 탱커 상성 3배 반영' : '가중치 없는 단순 합산'}</p></div>
+        <div className="recommendation-footer"><span className="footer-line" /><p>미입력 상성은 0점으로 계산</p><p className="data-note">추천 후보 {roleNames[myRole]} {candidateCount}명 · 상대 탱커 상성 {ENEMY_WEIGHT[myRole].tank}배 반영</p></div>
       </aside>
     </main>
+    </>}
     </>}
     <footer className="site-footer"><span>OW COACH</span><span>비공식 팬 도구 · 영웅 이미지 © Blizzard Entertainment</span></footer>
   </div>;
