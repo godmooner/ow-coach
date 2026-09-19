@@ -26,19 +26,36 @@ function Portrait({ hero }: { hero: Hero }) {
 }
 
 export default function App() {
+  const [myRole, setMyRole] = useState<Role | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const selectedHeroes = selected.map(id => heroes.find(hero => hero.id === id)!);
-  const results = recommend(heroes, matchups, selected).slice(0, 3);
+  const results = myRole ? recommend(heroes, matchups, selected, myRole).slice(0, 3) : [];
   const complete = selected.length === 5;
   const counts = Object.fromEntries(roles.map(role => [role, selectedHeroes.filter(hero => hero.role === role).length])) as Record<Role, number>;
   const choose = (hero: Hero) => setSelected(previous => toggleHero(previous, hero, heroes));
 
   return <div className="app-shell">
     <header className="topbar">
-      <div className="brand"><span className="brand-mark" aria-hidden="true">OW</span><span>COACH</span><span className="brand-divider" /><span className="page-name">딜러 추천</span></div>
-      <span className="version-label">MVP 0.3</span>
+      <div className="brand"><span className="brand-mark" aria-hidden="true">OW</span><span>COACH</span><span className="brand-divider" /><span className="page-name">{myRole ? `${roleNames[myRole]} 추천` : '역할군 선택'}</span></div>
+      <span className="version-label">MVP 0.4</span>
     </header>
 
+    {myRole === null ? <main className="role-selection" aria-labelledby="role-selection-title">
+      <span className="eyebrow">YOUR ROLE</span>
+      <h1 id="role-selection-title">내 역할군을 선택하세요</h1>
+      <p>플레이할 역할군을 고르면 상대 조합을 선택할 수 있습니다.</p>
+      <div className="role-options">
+        {roles.map(role => <button key={role} type="button" className={`role-option ${role}`}
+          aria-label={`${roleNames[role]} 선택`} onClick={() => setMyRole(role)}>
+          <RoleIcon role={role} /><span>{roleNames[role]}</span>
+          <span className="role-option-count">{heroes.filter(hero => hero.role === role).length}명</span>
+        </button>)}
+      </div>
+    </main> : <>
+    <div className={`current-role ${myRole}`}>
+      <span><RoleIcon role={myRole} />내 역할 · <strong>{roleNames[myRole]}</strong></span>
+      <button className="reset-button" type="button" onClick={() => setMyRole(null)}>역할 바꾸기</button>
+    </div>
     <main className="workspace">
       <section className="selection-panel" aria-labelledby="selection-title">
         <div className="section-heading">
@@ -82,7 +99,7 @@ export default function App() {
       </section>
 
       <aside className={`recommendation-panel ${complete ? 'ready' : ''}`} aria-labelledby="recommendation-title">
-        <div className="recommendation-heading"><span className="eyebrow">YOUR NEXT PICK</span><h2 id="recommendation-title">추천 딜러</h2><p>상대 조합에 대한 상성 점수순</p></div>
+        <div className="recommendation-heading"><span className="eyebrow">YOUR NEXT PICK</span><h2 id="recommendation-title">추천 {roleNames[myRole]}</h2><p>상대 조합에 대한 상성 점수순</p></div>
         <div className="results" aria-live="polite" aria-atomic="true" data-testid="results">
           {complete ? <>
             <div className="results-caption"><span>TOP 3</span><span>총점</span></div>
@@ -95,13 +112,14 @@ export default function App() {
             <p className="tie-note">동점은 같은 순위로 표시합니다.</p>
           </> : <div className="empty-results">
             <svg className="crosshair" viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="32" r="19" stroke="currentColor" strokeWidth="1.5"/><path d="M32 4v14m0 28v14M4 32h14m28 0h14" stroke="currentColor" strokeWidth="2"/><circle cx="32" cy="32" r="3" fill="currentColor"/></svg>
-            <h3>상대 조합을 완성하세요</h3><p>{5 - selected.length}명을 더 선택하면<br />추천 딜러가 표시됩니다.</p>
+            <h3>상대 조합을 완성하세요</h3><p>{5 - selected.length}명을 더 선택하면<br />추천 {roleNames[myRole]}가 표시됩니다.</p>
             <div className="selection-progress" aria-hidden="true">{Array.from({ length: 5 }, (_, index) => <span key={index} className={index < selected.length ? 'on' : ''} />)}</div>
           </div>}
         </div>
-        <div className="recommendation-footer"><span className="footer-line" /><p>미입력 상성은 0점으로 계산</p><p className="data-note">딜러 {heroes.filter(hero => hero.role === 'damage').length}명 · 가중치 없는 단순 합산</p></div>
+        <div className="recommendation-footer"><span className="footer-line" /><p>미입력 상성은 0점으로 계산</p><p className="data-note">{roleNames[myRole]} {heroes.filter(hero => hero.role === myRole).length}명 · {myRole === 'tank' ? '상대 탱커 상성 3배 반영' : '가중치 없는 단순 합산'}</p></div>
       </aside>
     </main>
+    </>}
     <footer className="site-footer"><span>OW COACH</span><span>비공식 팬 도구 · 영웅 이미지 © Blizzard Entertainment</span></footer>
   </div>;
 }
