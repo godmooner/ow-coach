@@ -3,10 +3,10 @@ export type Hero = { id: string; name_ko: string; role: Role; portrait: string }
 export type Matchups = Record<string, Record<string, number>>;
 export type Recommendation = { hero: Hero; score: number; rank: number };
 export const ROLE_LIMITS: Record<Role, number> = { tank: 1, damage: 2, support: 2 };
-const ENEMY_WEIGHT: Record<Role, Record<Role, number>> = {
+export const ENEMY_WEIGHT: Record<Role, Record<Role, number>> = {
   tank: { tank: 3, damage: 1, support: 1 },
-  damage: { tank: 1, damage: 1, support: 1 },
-  support: { tank: 1, damage: 1, support: 1 },
+  damage: { tank: 2, damage: 1, support: 1 },
+  support: { tank: 2, damage: 1, support: 1 },
 };
 
 export function toggleHero(selected: string[], hero: Hero, heroes: Hero[]): string[] {
