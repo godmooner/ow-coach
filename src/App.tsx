@@ -3,12 +3,13 @@ import heroData from '../data/build/heroes.json';
 import matchupData from '../data/build/matchups.json';
 import mapData from '../data/build/maps.json';
 import mapScoreData from '../data/build/map_scores.json';
-import { ROLE_LIMITS, recommend, formatScore, toggleHero } from './recommend';
+import { ROLE_LIMITS, recommend, toggleHero } from './recommend';
 import type { Hero, Role, Matchups, MapScores } from './recommend';
 import { Portrait, RoleIcon } from './HeroVisuals';
 import { MostPicker, MostSummary } from './MostPicker';
 import { emptyMostByRole, loadMost, saveMost } from './most';
-import { filterRecommendations, gradeForScore } from './recommendationView';
+import { selectMostRecommendations } from './recommendationView';
+import { RecommendationCard } from './RecommendationCard';
 import { MapPicker } from './MapPicker';
 import { WeightSettings } from './WeightSettings';
 import { defaultWeights, loadWeights, saveWeights } from './weights';
@@ -44,10 +45,9 @@ export default function App() {
   }, [mostByRole]);
   const [selected, setSelected] = useState<string[]>([]);
   const selectedHeroes = selected.map(id => heroes.find(hero => hero.id === id)!);
-  const preferredIds = myRole ? mostByRole[myRole].ids : [];
-  const candidateCount = myRole ? preferredIds.length || heroes.filter(hero => hero.role === myRole).length : 0;
-  const results = myRole ? filterRecommendations(recommend(heroes, matchups, selected, myRole,
-    { mapId: selectedMapId, mapScores, weights }), preferredIds).slice(0, 3) : [];
+  const candidateCount = myRole ? mostByRole[myRole].top.filter(id => id !== null).length : 0;
+  const { primary: results, alternative } = myRole ? selectMostRecommendations(recommend(heroes, matchups, selected, myRole,
+    { mapId: selectedMapId, mapScores, weights }), mostByRole[myRole], myRole) : { primary: [], alternative: null };
   const complete = selected.length === 5;
   const counts = Object.fromEntries(roles.map(role => [role, selectedHeroes.filter(hero => hero.role === role).length])) as Record<Role, number>;
   const choose = (hero: Hero) => setSelected(previous => toggleHero(previous, hero, heroes));
@@ -55,7 +55,7 @@ export default function App() {
   return <div className="app-shell">
     <header className="topbar">
       <div className="brand"><span className="brand-mark" aria-hidden="true">OW</span><span>COACH</span><span className="brand-divider" /><span className="page-name">{myRole ? `${roleNames[myRole]} ${selectingMost ? '모스트 선택' : '추천'}` : '역할군 선택'}</span></div>
-      <span className="version-label">v1.0</span>
+      <span className="version-label">v1.0.1</span>
     </header>
     <WeightSettings weights={weights} storageAvailable={weightStorageAvailable} onChange={setWeights} />
 
@@ -126,20 +126,18 @@ export default function App() {
       <aside className={`recommendation-panel ${complete ? 'ready' : ''}`} aria-labelledby="recommendation-title">
         <div className="recommendation-heading"><span className="eyebrow">YOUR NEXT PICK</span><h2 id="recommendation-title">추천 {roleNames[myRole]}</h2><p>{selectedMap ? '상성과 전장을 반영한 총점순' : '상대 조합에 대한 상성 점수순'}</p></div>
         <div className="results" aria-live="polite" aria-atomic="true" data-testid="results">
-          {complete ? <>
+          {candidateCount === 0 ? <div className="empty-results">
+            <h3>모스트를 선택하세요</h3><p>1~3순위에 영웅을 고르면<br />그 안에서 추천해 드립니다.</p>
+            <button className="reset-button choose-most" type="button" onClick={() => setSelectingMost(true)}>모스트 선택</button>
+          </div> : complete ? <>
             <div className="results-caption"><span>TOP {results.length}</span><span>등급 · 총점</span></div>
-            {results.map((result, index) => {
-              const grade = gradeForScore(result.score, myRole);
-              return <article key={result.hero.id} className={`result-card ${index === 0 ? 'first' : ''}`}
-              data-result-id={result.hero.id} data-score={result.score}>
-              <div className="result-portrait"><Portrait hero={result.hero} /><span className="rank">{String(result.rank).padStart(2, '0')}</span></div>
-              <div className="result-name"><span>{index === 0 ? '추천 픽' : '다른 선택'}</span><h3>{result.hero.name_ko}</h3></div>
-              <div className="result-grade">
-                <strong className={`grade-label grade-${grade.level}`} data-testid="grade">{grade.label}</strong>
-                <span className="score">{formatScore(result.score)}<span>점</span></span>
-              </div>
-            </article>;
-            })}
+            {results.map((result, index) => <RecommendationCard key={result.hero.id} result={result}
+              mostRank={result.mostRank} first={index === 0} />)}
+            {alternative && <section className="possible-recommendation" aria-label="가능 영웅 추가 추천">
+              <div className="results-caption"><span>가능 · 추가 선택</span></div>
+              <p className="most-help">모스트가 모두 ‘약간 유리’ 이하라 추가로 표시합니다.</p>
+              <RecommendationCard result={alternative} />
+            </section>}
             <p className="tie-note">동점은 같은 순위로 표시합니다. 등급은 역할별 고정 기준입니다.</p>
           </> : <div className="empty-results">
             <svg className="crosshair" viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="32" r="19" stroke="currentColor" strokeWidth="1.5"/><path d="M32 4v14m0 28v14M4 32h14m28 0h14" stroke="currentColor" strokeWidth="2"/><circle cx="32" cy="32" r="3" fill="currentColor"/></svg>

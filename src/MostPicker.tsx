@@ -21,6 +21,7 @@ export function MostPicker({ heroes, roleName, selection, storageAvailable, onCh
   const allowedIds = heroes.map(hero => hero.id);
   const count = selection.ids.length;
   const fourth = fourthMost(selection);
+  const name = (id: string) => heroes.find(hero => hero.id === id)?.name_ko ?? id;
   const choose = (hero: Hero) => {
     const next = toggleMostHero(selection, hero.id, activeRank, allowedIds);
     onChange(next);
@@ -35,19 +36,25 @@ export function MostPicker({ heroes, roleName, selection, storageAvailable, onCh
       <div><span className="eyebrow">YOUR MOST PICKS</span><h1 id="most-title">내 모스트 선택</h1></div>
       <span className="most-count">{roleName} {count} / {heroes.length}명</span>
     </div>
-    <p className="most-description">다룰 줄 아는 영웅을 골라주세요. 1~3순위는 각 1명, 4순위는 여러 명을 선택할 수 있습니다. 비워 둔 순위가 있어도 완료할 수 있습니다.</p>
+    <p className="most-description">주로 플레이하는 영웅을 1~3순위에, 그 외 다룰 줄 아는 영웅은 ‘가능’에 골라주세요. 비워 둔 순위가 있어도 완료할 수 있습니다.</p>
 
     <div className="most-ranks" role="group" aria-label="모스트 순위 선택">
-      {ranks.map(rank => <button key={rank} type="button" aria-label={`${rank}순위 선택`}
+      {ranks.map(rank => {
+        const hero = rank === 4 ? undefined : heroes.find(item => item.id === selection.top[rank - 1]);
+        return <button key={rank} type="button" aria-label={rank === 4 ? '가능 선택' : `${rank}순위 선택`}
         aria-pressed={activeRank === rank} className={`most-rank ${activeRank === rank ? 'active' : ''}`}
         onClick={() => setActiveRank(rank)}>
-        <span className="most-rank-label">{rank}순위<span>{rank === 4 ? '여러 명 선택 가능' : '최대 1명'}</span></span>
-        <span className="most-rank-name">{rank === 4 ? `${fourth.length}명 선택` : heroes.find(hero => hero.id === selection.top[rank - 1])?.name_ko ?? '영웅을 골라주세요'}</span>
-      </button>)}
+        <span className="most-rank-label">{rank === 4 ? '가능' : `${rank}순위`}</span>
+        <span className="most-rank-content">
+          {hero && <span className="most-rank-portrait"><Portrait key={hero.id} hero={hero} /></span>}
+          <span className="most-rank-name">{rank === 4 ? fourth.length ? fourth.map(name).join(', ') : '없음' : hero?.name_ko ?? '영웅을 골라주세요'}</span>
+        </span>
+      </button>;
+      })}
     </div>
 
     <div className="most-toolbar">
-      <p aria-live="polite"><strong>{activeRank}순위</strong> 선택 중</p>
+      <p aria-live="polite"><strong>{activeRank === 4 ? '가능' : `${activeRank}순위`}</strong> 선택 중</p>
       <div className="most-actions">
         <button className="reset-button" type="button" data-testid="most-select-all"
           onClick={() => onChange(selectAllMost(selection, allowedIds))}>전체 선택</button>
@@ -62,18 +69,18 @@ export function MostPicker({ heroes, roleName, selection, storageAvailable, onCh
         const assignedRank = topIndex >= 0 ? topIndex + 1 : selection.ids.includes(hero.id) ? 4 : null;
         return <button key={hero.id} type="button" data-hero-id={hero.id}
           className={`hero-button ${assignedRank ? 'selected' : ''}`} aria-label={hero.name_ko} aria-pressed={assignedRank !== null}
-          aria-description={assignedRank ? `모스트 ${assignedRank}순위` : '선택 안 됨'}
+          aria-description={assignedRank === 4 ? '가능' : assignedRank ? `모스트 ${assignedRank}순위` : '선택 안 됨'}
           onClick={() => choose(hero)}>
           <Portrait hero={hero} />
-          {assignedRank && <span className="most-rank-badge">{assignedRank}순위</span>}
+          {assignedRank && <span className="most-rank-badge">{assignedRank === 4 ? '가능' : `${assignedRank}순위`}</span>}
           <span className="hero-name">{hero.name_ko}</span>
         </button>;
       })}
     </div>
-    <p className="most-help">전체 선택은 정해 둔 1~3순위를 유지하고, 나머지 영웅을 모두 4순위에 넣습니다.</p>
+    <p className="most-help">전체 선택은 정해 둔 1~3순위를 유지하고, 나머지 영웅을 모두 ‘가능’에 넣습니다.</p>
 
     <div className="most-bottom">
-      <div><p aria-live="polite">{count ? `선택한 ${count}명 안에서 추천합니다.` : '선택하지 않으면 역할군 전체에서 추천합니다.'}</p>
+      <div><p>모스트 1~3순위 안에서 추천합니다. 모두 ‘약간 유리’ 이하이면 ‘가능’에서 1명을 추가로 표시합니다.</p>
         <p className="most-help">모스트 순위에 따른 가산점은 없습니다.{storageAvailable && ' 선택은 이 브라우저에 저장됩니다.'}</p>
         {!storageAvailable && <p className="most-help storage-notice" role="status">브라우저 저장을 사용할 수 없어 이번 페이지에서만 선택이 유지됩니다.</p>}</div>
       <div className="most-bottom-actions">
@@ -93,11 +100,11 @@ export function MostSummary({ heroes, selection, onEdit }: {
   const name = (id: string | null) => heroes.find(hero => hero.id === id)?.name_ko ?? '미선택';
   const fourth = fourthMost(selection);
   return <section className="most-summary" aria-label="내 모스트" data-testid="most-summary">
-    <div className="most-summary-heading"><strong>내 모스트 {selection.ids.length ? `· ${selection.ids.length}명 안에서 추천` : '· 전체 후보'}</strong>
+    <div className="most-summary-heading"><strong>내 모스트 · 1~3순위 안에서 추천</strong>
       <button className="reset-button" type="button" data-testid="most-edit" onClick={onEdit}>모스트 수정</button></div>
     {selection.ids.length ? <div className="most-summary-list">
       {selection.top.map((id, index) => <p key={index}><strong>{index + 1}순위</strong> {name(id)}</p>)}
-      <p className="most-summary-fourth"><strong>4순위</strong> {fourth.length ? fourth.map(name).join(', ') : '없음'}</p>
-    </div> : <p className="most-help">선택한 모스트가 없어 역할군 전체에서 추천합니다.</p>}
+      <p className="most-summary-fourth"><strong>가능</strong> {fourth.length ? fourth.map(name).join(', ') : '없음'}</p>
+    </div> : <p className="most-help">추천을 받으려면 모스트 1~3순위에 영웅을 골라주세요.</p>}
   </section>;
 }
