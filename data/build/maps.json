@@ -1,0 +1,152 @@
+[
+ {
+  "id": "antarctic-peninsula",
+  "name_ko": "남극 반도",
+  "mode": "쟁탈"
+ },
+ {
+  "id": "nepal",
+  "name_ko": "네팔",
+  "mode": "쟁탈"
+ },
+ {
+  "id": "lijiang-tower",
+  "name_ko": "리장 타워",
+  "mode": "쟁탈"
+ },
+ {
+  "id": "busan",
+  "name_ko": "부산",
+  "mode": "쟁탈"
+ },
+ {
+  "id": "samoa",
+  "name_ko": "사모아",
+  "mode": "쟁탈"
+ },
+ {
+  "id": "oasis",
+  "name_ko": "오아시스",
+  "mode": "쟁탈"
+ },
+ {
+  "id": "ilios",
+  "name_ko": "일리오스",
+  "mode": "쟁탈"
+ },
+ {
+  "id": "route-66",
+  "name_ko": "66번 국도",
+  "mode": "호위"
+ },
+ {
+  "id": "watchpoint-gibraltar",
+  "name_ko": "감시 기지: 지브롤터",
+  "mode": "호위"
+ },
+ {
+  "id": "dorado",
+  "name_ko": "도라도",
+  "mode": "호위"
+ },
+ {
+  "id": "rialto",
+  "name_ko": "리알토",
+  "mode": "호위"
+ },
+ {
+  "id": "shambali-monastery",
+  "name_ko": "샴발리 수도원",
+  "mode": "호위"
+ },
+ {
+  "id": "circuit-royal",
+  "name_ko": "서킷 로얄",
+  "mode": "호위"
+ },
+ {
+  "id": "junkertown",
+  "name_ko": "쓰레기촌",
+  "mode": "호위"
+ },
+ {
+  "id": "havana",
+  "name_ko": "하바나",
+  "mode": "호위"
+ },
+ {
+  "id": "neon-junction",
+  "name_ko": "네온 교차로",
+  "mode": "혼합"
+ },
+ {
+  "id": "numbani",
+  "name_ko": "눔바니",
+  "mode": "혼합"
+ },
+ {
+  "id": "midtown",
+  "name_ko": "미드타운",
+  "mode": "혼합"
+ },
+ {
+  "id": "blizzard-world",
+  "name_ko": "블리자드 월드",
+  "mode": "혼합"
+ },
+ {
+  "id": "eichenwalde",
+  "name_ko": "아이헨발데",
+  "mode": "혼합"
+ },
+ {
+  "id": "kings-row",
+  "name_ko": "왕의 길",
+  "mode": "혼합"
+ },
+ {
+  "id": "paraiso",
+  "name_ko": "파라이수",
+  "mode": "혼합"
+ },
+ {
+  "id": "hollywood",
+  "name_ko": "할리우드",
+  "mode": "혼합"
+ },
+ {
+  "id": "new-queen-street",
+  "name_ko": "뉴 퀸 스트리트",
+  "mode": "밀기"
+ },
+ {
+  "id": "runasapi",
+  "name_ko": "루나사피",
+  "mode": "밀기"
+ },
+ {
+  "id": "esperanca",
+  "name_ko": "이스페란사",
+  "mode": "밀기"
+ },
+ {
+  "id": "colosseo",
+  "name_ko": "콜로세오",
+  "mode": "밀기"
+ },
+ {
+  "id": "new-junk-city",
+  "name_ko": "뉴 정크 시티",
+  "mode": "플래시포인트"
+ },
+ {
+  "id": "suravasa",
+  "name_ko": "수라바사",
+  "mode": "플래시포인트"
+ },
+ {
+  "id": "aatlis",
+  "name_ko": "아틀리스",
+  "mode": "플래시포인트"
+ }
+]

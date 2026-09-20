@@ -1,21 +1,38 @@
 import { useEffect, useState } from 'react';
 import heroData from '../data/build/heroes.json';
 import matchupData from '../data/build/matchups.json';
-import { ROLE_LIMITS, ENEMY_WEIGHT, recommend, formatScore, toggleHero } from './recommend';
-import type { Hero, Role, Matchups } from './recommend';
+import mapData from '../data/build/maps.json';
+import mapScoreData from '../data/build/map_scores.json';
+import { ROLE_LIMITS, recommend, formatScore, toggleHero } from './recommend';
+import type { Hero, Role, Matchups, MapScores } from './recommend';
 import { Portrait, RoleIcon } from './HeroVisuals';
 import { MostPicker, MostSummary } from './MostPicker';
 import { emptyMostByRole, loadMost, saveMost } from './most';
 import { filterRecommendations, gradeForScore } from './recommendationView';
+import { MapPicker } from './MapPicker';
+import { WeightSettings } from './WeightSettings';
+import { defaultWeights, loadWeights, saveWeights } from './weights';
 
 const heroes = heroData as Hero[];
 const matchups: Matchups = matchupData;
+const mapScores: MapScores = mapScoreData;
 const roles: Role[] = ['tank', 'damage', 'support'];
 const roleNames: Record<Role, string> = { tank: '탱커', damage: '딜러', support: '힐러' };
 
 export default function App() {
   const [myRole, setMyRole] = useState<Role | null>(null);
   const [selectingMost, setSelectingMost] = useState(true);
+  const [selectedMapId, setSelectedMapId] = useState<string | null>(null);
+  const selectedMap = mapData.find(map => map.id === selectedMapId);
+  const [weights, setWeights] = useState(() => {
+    try { return loadWeights(window.localStorage); }
+    catch { return defaultWeights(); }
+  });
+  const [weightStorageAvailable, setWeightStorageAvailable] = useState(true);
+  useEffect(() => {
+    try { saveWeights(weights, window.localStorage); setWeightStorageAvailable(true); }
+    catch { setWeightStorageAvailable(false); }
+  }, [weights]);
   const [mostByRole, setMostByRole] = useState(() => {
     try { return loadMost(heroes, window.localStorage); }
     catch { return emptyMostByRole(); }
@@ -29,7 +46,8 @@ export default function App() {
   const selectedHeroes = selected.map(id => heroes.find(hero => hero.id === id)!);
   const preferredIds = myRole ? mostByRole[myRole].ids : [];
   const candidateCount = myRole ? preferredIds.length || heroes.filter(hero => hero.role === myRole).length : 0;
-  const results = myRole ? filterRecommendations(recommend(heroes, matchups, selected, myRole), preferredIds).slice(0, 3) : [];
+  const results = myRole ? filterRecommendations(recommend(heroes, matchups, selected, myRole,
+    { mapId: selectedMapId, mapScores, weights }), preferredIds).slice(0, 3) : [];
   const complete = selected.length === 5;
   const counts = Object.fromEntries(roles.map(role => [role, selectedHeroes.filter(hero => hero.role === role).length])) as Record<Role, number>;
   const choose = (hero: Hero) => setSelected(previous => toggleHero(previous, hero, heroes));
@@ -37,8 +55,9 @@ export default function App() {
   return <div className="app-shell">
     <header className="topbar">
       <div className="brand"><span className="brand-mark" aria-hidden="true">OW</span><span>COACH</span><span className="brand-divider" /><span className="page-name">{myRole ? `${roleNames[myRole]} ${selectingMost ? '모스트 선택' : '추천'}` : '역할군 선택'}</span></div>
-      <span className="version-label">MVP 0.5</span>
+      <span className="version-label">v1.0</span>
     </header>
+    <WeightSettings weights={weights} storageAvailable={weightStorageAvailable} onChange={setWeights} />
 
     {myRole === null ? <main className="role-selection" aria-labelledby="role-selection-title">
       <span className="eyebrow">YOUR ROLE</span>
@@ -101,10 +120,11 @@ export default function App() {
             </div>
           </section>)}
         </div>
+        <MapPicker maps={mapData} selectedId={selectedMapId} enabled={complete} onChange={setSelectedMapId} />
       </section>
 
       <aside className={`recommendation-panel ${complete ? 'ready' : ''}`} aria-labelledby="recommendation-title">
-        <div className="recommendation-heading"><span className="eyebrow">YOUR NEXT PICK</span><h2 id="recommendation-title">추천 {roleNames[myRole]}</h2><p>상대 조합에 대한 상성 점수순</p></div>
+        <div className="recommendation-heading"><span className="eyebrow">YOUR NEXT PICK</span><h2 id="recommendation-title">추천 {roleNames[myRole]}</h2><p>{selectedMap ? '상성과 전장을 반영한 총점순' : '상대 조합에 대한 상성 점수순'}</p></div>
         <div className="results" aria-live="polite" aria-atomic="true" data-testid="results">
           {complete ? <>
             <div className="results-caption"><span>TOP {results.length}</span><span>등급 · 총점</span></div>
@@ -127,7 +147,8 @@ export default function App() {
             <div className="selection-progress" aria-hidden="true">{Array.from({ length: 5 }, (_, index) => <span key={index} className={index < selected.length ? 'on' : ''} />)}</div>
           </div>}
         </div>
-        <div className="recommendation-footer"><span className="footer-line" /><p>미입력 상성은 0점으로 계산</p><p className="data-note">추천 후보 {roleNames[myRole]} {candidateCount}명 · 상대 탱커 상성 {ENEMY_WEIGHT[myRole].tank}배 반영</p></div>
+        <div className="recommendation-footer"><span className="footer-line" /><p>미입력 상성은 0점으로 계산</p><p className="data-note">추천 후보 {roleNames[myRole]} {candidateCount}명 · 상대 탱커 상성 {weights.enemy[myRole].tank}배 반영</p>
+          <p className="data-note">{selectedMap ? `전장 · ${selectedMap.name_ko}` : '전장 미선택 · 맵 점수 0'}</p></div>
       </aside>
     </main>
     </>}
