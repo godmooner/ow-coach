@@ -3,56 +3,63 @@ import assert from 'node:assert/strict';
 import { selectMostRecommendations } from '../src/recommendationView.ts';
 import type { Recommendation, Role } from '../src/recommend.ts';
 import type { MostSelection } from '../src/most.ts';
-import gradeCuts from '../data/build/grade_cuts.json' with { type: 'json' };
+import cuts from '../data/build/grade_cuts.json' with { type: 'json' };
 
-const selection: MostSelection = { ids: ['first', 'second', 'third', 'possible-a', 'possible-b'], top: ['first', 'second', 'third'] };
-const row = (id: string, score: number, rank: number, role: Role = 'damage'): Recommendation => ({
-  hero: { id, name_ko: id, role, portrait: `${id}.png` }, score, rank,
+const row = (id: string, score: number, rank: number, role: Role = 'damage'): Recommendation => ({ hero: { id, role, name_ko: id, portrait: '' }, score, rank });
+const picks = (ids: string[], top: (string | null)[] = [null, null, null]): MostSelection => ({ ids, top: top as MostSelection['top'] });
+
+test('unconfigured preferences recommend the top three of the selected role without extra suggestions', () => {
+  const rows = [row('tank', 30, 1, 'tank'), row('a', 10, 1), row('b', 8, 2), row('c', 6, 3), row('d', 4, 4)];
+  const result = selectMostRecommendations(rows, picks([]), 'damage');
+  assert.deepEqual(result.primary.map(r => r.hero.id), ['a', 'b', 'c']);
+  assert.ok(result.primary.every(r => !r.mostRank && !r.isPossible));
+  assert.equal(result.alternative, null);
 });
 
-test('main recommendations contain only explicit most picks, keep score order and show the personal priority', () => {
-  const rows = [row('unselected', 20, 1), row('possible-a', 15, 2), row('third', 8, 3), row('first', 5, 4), row('second', -2, 5)];
+test('possible heroes compete with ranked most heroes by score, capped at three', () => {
+  const rows = [row('outside', 20, 1), row('possible', 15, 2), row('third', 8, 3), row('first', 5, 4), row('second', -2, 5)];
   const before = structuredClone(rows);
-  const result = selectMostRecommendations(rows, selection, 'damage');
-  assert.deepEqual(result.primary.map(r => [r.hero.id, r.score, r.rank, r.mostRank]), [
-    ['third', 8, 1, 3], ['first', 5, 2, 1], ['second', -2, 3, 2],
-  ]);
-  assert.equal(result.alternative, null);
+  const result = selectMostRecommendations(rows, picks(['first', 'second', 'third', 'possible'], ['first', 'second', 'third']), 'damage');
+  assert.deepEqual(result.primary.map(r => [r.hero.id, r.rank, r.mostRank, r.isPossible]), [['possible', 1, undefined, true], ['third', 2, 3, false], ['first', 3, 1, false]]);
   assert.deepEqual(rows, before);
+  assert.equal(result.alternative, null);
+});
+
+test('one or two preferred heroes do not get padded with unselected heroes', () => {
+  const rows = [row('outside', 20, 1), row('a', 5, 2), row('b', 2, 3)];
+  for (const ids of [['a'], ['a', 'b']]) {
+    assert.deepEqual(selectMostRecommendations(rows, picks(ids, ['a', null, null]), 'damage').primary.map(r => r.hero.id), ids);
+  }
+});
+
+test('possible-only choices work without inventing most priorities; invalid roles are ignored', () => {
+  const result = selectMostRecommendations([row('tank', 20, 1, 'tank'), row('a', 2, 1), row('b', 1, 2)], picks(['tank', 'b']), 'damage');
+  assert.deepEqual(result.primary.map(r => [r.hero.id, r.mostRank, r.isPossible]), [['b', undefined, true]]);
 });
 
 for (const role of ['tank', 'damage', 'support'] as const) {
-  const cutoff = gradeCuts.cuts[role][4];
-  test(`${role}: the weakly-favorable boundary includes one possible pick; just above it hides the extra pick`, () => {
-    const rows = [row('unselected', 20, 1, role), row('possible-a', 12, 2, role), row('possible-b', 10, 3, role),
-      row('first', cutoff, 4, role), row('second', -3, 5, role), row('third', -5, 6, role)];
-    assert.equal(selectMostRecommendations(rows, selection, role).alternative?.hero.id, 'possible-a');
-    rows[3] = row('first', cutoff + 0.0001, 4, role);
-    assert.equal(selectMostRecommendations(rows, selection, role).alternative, null);
+  test(`${role}: global extra suggestion appears at weakly-unfavorable cutoff and disappears immediately above it`, () => {
+    const cutoff = cuts.cuts[role][2];
+    const selected = picks(['a', 'b'], ['a', null, null]);
+    const rows = [row('outside', 6, 1, role), row('a', cutoff, 2, role), row('b', cutoff - 1, 3, role)];
+    assert.equal(selectMostRecommendations(rows, selected, role).alternative?.hero.id, 'outside');
+    rows[1] = row('a', cutoff + 0.0001, 2, role);
+    assert.equal(selectMostRecommendations(rows, selected, role).alternative, null);
   });
 }
 
-test('partial priorities retain their labels and tied scores retain engine order without a priority bonus', () => {
-  const partial: MostSelection = { ids: ['second', 'third', 'possible-b', 'possible-a'], top: [null, 'second', 'third'] };
-  const rows = [row('third', 0, 1), row('second', 0, 1), row('possible-a', -2, 3), row('possible-b', -2, 3)];
-  const result = selectMostRecommendations(rows, partial, 'damage');
-  assert.deepEqual(result.primary.map(r => [r.hero.id, r.rank, r.mostRank]), [['third', 1, 3], ['second', 1, 2]]);
-  assert.equal(result.alternative?.hero.id, 'possible-a');
-  assert.equal(result.alternative?.score, -2, 'best possible need not be better than the main picks');
+test('a neutral possible hero prevents extra suggestions even if every ranked most is unfavorable', () => {
+  const rows = [row('outside', 10, 1), row('possible', 0, 2), row('a', -5, 3)];
+  assert.equal(selectMostRecommendations(rows, picks(['a', 'possible'], ['a', null, null]), 'damage').alternative, null);
 });
 
-test('empty priorities never expand to all heroes or trigger an extra pick, including select-all without priorities', () => {
-  const rows = [row('first', 2, 1), row('possible-a', 0, 2)];
-  for (const ids of [[], ['possible-a'], ['first', 'possible-a']]) {
-    assert.deepEqual(selectMostRecommendations(rows, { ids, top: [null, null, null] }, 'damage'), { primary: [], alternative: null });
-  }
-  assert.deepEqual(selectMostRecommendations([], selection, 'damage'), { primary: [], alternative: null });
+test('ties preserve engine order without most priority bonuses or duplicate global suggestions', () => {
+  const rows = [row('possible', -5, 1), row('a', -5, 1), row('outside', -5, 1)];
+  const result = selectMostRecommendations(rows, picks(['a', 'possible'], ['a', null, null]), 'damage');
+  assert.deepEqual(result.primary.map(r => [r.hero.id, r.rank]), [['possible', 1], ['a', 1]]);
+  assert.equal(result.alternative, null, 'global best is already in the primary recommendations');
 });
 
-test('only selected same-role heroes are eligible; missing possible picks do not add a card', () => {
-  const rows = [row('wrong-role', 20, 1, 'tank'), row('unselected', 10, 2), row('first', -4, 3)];
-  const picks: MostSelection = { ids: ['first', 'wrong-role'], top: ['first', null, null] };
-  const result = selectMostRecommendations(rows, picks, 'damage');
-  assert.deepEqual(result.primary.map(r => r.hero.id), ['first']);
-  assert.equal(result.alternative, null);
+test('empty engine results remain empty even with stored preferences', () => {
+  assert.deepEqual(selectMostRecommendations([], picks(['a'], ['a', null, null]), 'damage'), { primary: [], alternative: null });
 });

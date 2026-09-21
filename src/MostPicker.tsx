@@ -33,7 +33,7 @@ export function MostPicker({ heroes, roleName, selection, storageAvailable, onCh
 
   return <main className="most-selection" aria-labelledby="most-title">
     <div className="section-heading most-heading">
-      <div><span className="eyebrow">YOUR MOST PICKS</span><h1 id="most-title">내 모스트 선택</h1></div>
+      <div><span className="eyebrow">YOUR MOST PICKS</span><h1 id="most-title">선호 영웅(모스트) 선택</h1></div>
       <span className="most-count">{roleName} {count} / {heroes.length}명</span>
     </div>
     <p className="most-description">주로 플레이하는 영웅을 1~3순위에, 그 외 다룰 줄 아는 영웅은 ‘가능’에 골라주세요. 비워 둔 순위가 있어도 완료할 수 있습니다.</p>
@@ -80,12 +80,12 @@ export function MostPicker({ heroes, roleName, selection, storageAvailable, onCh
     <p className="most-help">전체 선택은 정해 둔 1~3순위를 유지하고, 나머지 영웅을 모두 ‘가능’에 넣습니다.</p>
 
     <div className="most-bottom">
-      <div><p>모스트 1~3순위 안에서 추천합니다. 모두 ‘약간 유리’ 이하이면 ‘가능’에서 1명을 추가로 표시합니다.</p>
+      <div><p>모스트와 ‘가능’을 합쳐 점수가 높은 순서로 최대 3명을 추천합니다. 아무도 선택하지 않으면 해당 역할의 전체 영웅에서 추천합니다.</p>
         <p className="most-help">모스트 순위에 따른 가산점은 없습니다.{storageAvailable && ' 선택은 이 브라우저에 저장됩니다.'}</p>
         {!storageAvailable && <p className="most-help storage-notice" role="status">브라우저 저장을 사용할 수 없어 이번 페이지에서만 선택이 유지됩니다.</p>}</div>
       <div className="most-bottom-actions">
         <button className="reset-button" type="button" data-testid="most-skip"
-          onClick={() => { onChange(emptyMost()); onComplete(); }}>선택 없이 건너뛰기</button>
+          onClick={() => { onChange(emptyMost()); onComplete(); }}>선호 해제하고 돌아가기</button>
         <button className="complete-button" type="button" data-testid="most-complete" onClick={onComplete}>완료</button>
       </div>
     </div>
@@ -100,11 +100,11 @@ export function MostSummary({ heroes, selection, onEdit }: {
   const name = (id: string | null) => heroes.find(hero => hero.id === id)?.name_ko ?? '미선택';
   const fourth = fourthMost(selection);
   return <section className="most-summary" aria-label="내 모스트" data-testid="most-summary">
-    <div className="most-summary-heading"><strong>내 모스트 · 1~3순위 안에서 추천</strong>
-      <button className="reset-button" type="button" data-testid="most-edit" onClick={onEdit}>모스트 수정</button></div>
+    <div className="most-summary-heading"><strong>{selection.ids.length ? '선호 영웅 · 모스트 + 가능' : '전체 영웅에서 추천'}</strong>
+      <button className="reset-button" type="button" data-testid="most-edit" onClick={onEdit}>선호 영웅(모스트) 선택</button></div>
     {selection.ids.length ? <div className="most-summary-list">
       {selection.top.map((id, index) => <p key={index}><strong>{index + 1}순위</strong> {name(id)}</p>)}
       <p className="most-summary-fourth"><strong>가능</strong> {fourth.length ? fourth.map(name).join(', ') : '없음'}</p>
-    </div> : <p className="most-help">추천을 받으려면 모스트 1~3순위에 영웅을 골라주세요.</p>}
+    </div> : <p className="most-help">원하시면 다룰 줄 아는 영웅만 골라 추천받을 수 있습니다.</p>}
   </section>;
 }
