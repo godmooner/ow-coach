@@ -22,7 +22,7 @@ const roleNames: Record<Role, string> = { tank: '탱커', damage: '딜러', supp
 
 export default function App() {
   const [myRole, setMyRole] = useState<Role | null>(null);
-  const [selectingMost, setSelectingMost] = useState(true);
+  const [editingMostRole, setEditingMostRole] = useState<Role | null>(null);
   const [selectedMapId, setSelectedMapId] = useState<string | null>(null);
   const selectedMap = mapData.find(map => map.id === selectedMapId);
   const [weights, setWeights] = useState(() => {
@@ -45,7 +45,7 @@ export default function App() {
   }, [mostByRole]);
   const [selected, setSelected] = useState<string[]>([]);
   const selectedHeroes = selected.map(id => heroes.find(hero => hero.id === id)!);
-  const candidateCount = myRole ? mostByRole[myRole].top.filter(id => id !== null).length : 0;
+  const candidateCount = myRole ? mostByRole[myRole].ids.length || heroes.filter(hero => hero.role === myRole).length : 0;
   const { primary: results, alternative } = myRole ? selectMostRecommendations(recommend(heroes, matchups, selected, myRole,
     { mapId: selectedMapId, mapScores, weights }), mostByRole[myRole], myRole) : { primary: [], alternative: null };
   const complete = selected.length === 5;
@@ -54,7 +54,7 @@ export default function App() {
 
   return <div className="app-shell">
     <header className="topbar">
-      <div className="brand"><span className="brand-mark" aria-hidden="true">OW</span><span>COACH</span><span className="brand-divider" /><span className="page-name">{myRole ? `${roleNames[myRole]} ${selectingMost ? '모스트 선택' : '추천'}` : '역할군 선택'}</span></div>
+      <div className="brand"><span className="brand-mark" aria-hidden="true">OW</span><span>COACH</span><span className="brand-divider" /><span className="page-name">{editingMostRole ? `${roleNames[editingMostRole]} 모스트 선택` : myRole ? `${roleNames[myRole]} 추천` : '역할군 선택'}</span></div>
       <span className="version-label">v1.5</span>
     </header>
     <WeightSettings weights={weights} storageAvailable={weightStorageAvailable} onChange={setWeights} />
@@ -62,10 +62,10 @@ export default function App() {
     {myRole === null ? <main className="role-selection" aria-labelledby="role-selection-title">
       <span className="eyebrow">YOUR ROLE</span>
       <h1 id="role-selection-title">내 역할군을 선택하세요</h1>
-      <p>플레이할 역할군을 고른 뒤 모스트를 선택하세요.</p>
+      <p>플레이할 역할군을 고른 뒤 상대 조합과 전장을 선택하세요.</p>
       <div className="role-options">
         {roles.map(role => <button key={role} type="button" className={`role-option ${role}`}
-          aria-label={`${roleNames[role]} 선택`} onClick={() => { setMyRole(role); setSelectingMost(true); }}>
+          aria-label={`${roleNames[role]} 선택`} onClick={() => { setMyRole(role); setEditingMostRole(null); }}>
           <RoleIcon role={role} /><span>{roleNames[role]}</span>
           <span className="role-option-count">{heroes.filter(hero => hero.role === role).length}명</span>
         </button>)}
@@ -73,13 +73,19 @@ export default function App() {
     </main> : <>
     <div className={`current-role ${myRole}`}>
       <span><RoleIcon role={myRole} />내 역할 · <strong>{roleNames[myRole]}</strong></span>
-      <button className="reset-button" type="button" onClick={() => setMyRole(null)}>역할 바꾸기</button>
+      <button className="reset-button" type="button" onClick={() => { setMyRole(null); setEditingMostRole(null); }}>역할 바꾸기</button>
     </div>
-    {selectingMost ? <MostPicker heroes={heroes.filter(hero => hero.role === myRole)} roleName={roleNames[myRole]}
+    {editingMostRole !== null ? <>
+    <div className="most-role-tabs" role="group" aria-label="선호 영웅을 설정할 역할">
+      {roles.map(role => <button key={role} className="reset-button" type="button" data-most-role={role}
+        aria-pressed={editingMostRole === role} onClick={() => setEditingMostRole(role)}>{roleNames[role]}</button>)}
+    </div>
+    <MostPicker key={editingMostRole} heroes={heroes.filter(hero => hero.role === editingMostRole)} roleName={roleNames[editingMostRole]}
       storageAvailable={storageAvailable}
-      selection={mostByRole[myRole]} onChange={next => setMostByRole(previous => ({ ...previous, [myRole]: next }))}
-      onComplete={() => setSelectingMost(false)} /> : <>
-    <MostSummary heroes={heroes} selection={mostByRole[myRole]} onEdit={() => setSelectingMost(true)} />
+      selection={mostByRole[editingMostRole]} onChange={next => setMostByRole(previous => ({ ...previous, [editingMostRole]: next }))}
+      onComplete={() => setEditingMostRole(null)} />
+    </> : <>
+    <MostSummary heroes={heroes} selection={mostByRole[myRole]} onEdit={() => setEditingMostRole(myRole)} />
     <main className="workspace">
       <section className="selection-panel" aria-labelledby="selection-title">
         <div className="section-heading">
@@ -126,17 +132,14 @@ export default function App() {
       <aside className={`recommendation-panel ${complete ? 'ready' : ''}`} aria-labelledby="recommendation-title">
         <div className="recommendation-heading"><span className="eyebrow">YOUR NEXT PICK</span><h2 id="recommendation-title">추천 {roleNames[myRole]}</h2><p>{selectedMap ? '상성과 전장을 반영한 총점순' : '상대 조합에 대한 상성 점수순'}</p></div>
         <div className="results" aria-live="polite" aria-atomic="true" data-testid="results">
-          {candidateCount === 0 ? <div className="empty-results">
-            <h3>모스트를 선택하세요</h3><p>1~3순위에 영웅을 고르면<br />그 안에서 추천해 드립니다.</p>
-            <button className="reset-button choose-most" type="button" onClick={() => setSelectingMost(true)}>모스트 선택</button>
-          </div> : complete ? <>
+          {complete ? <>
             <div className="results-caption"><span>TOP {results.length}</span><span>등급 · 총점</span></div>
             {results.map((result, index) => <RecommendationCard key={result.hero.id} result={result}
-              mostRank={result.mostRank} first={index === 0} />)}
-            {alternative && <section className="possible-recommendation" aria-label="가능 영웅 추가 추천">
-              <div className="results-caption"><span>가능 · 추가 선택</span></div>
-              <p className="most-help">모스트가 모두 ‘약간 유리’ 이하라 추가로 표시합니다.</p>
-              <RecommendationCard result={alternative} />
+              mostRank={result.mostRank} isPossible={result.isPossible} first={index === 0} />)}
+            {alternative && <section className="possible-recommendation" aria-label="전체 영웅 추가 추천">
+              <div className="results-caption"><span>새로운 영웅 제안</span></div>
+              <p className="most-help">선호 영웅 추천이 모두 ‘약간 불리’ 이하라 전체 영웅 중에서 제안합니다.</p>
+              <RecommendationCard result={alternative} alternative />
             </section>}
             <p className="tie-note">동점은 같은 순위로 표시합니다. 등급은 역할별 고정 기준입니다.</p>
           </> : <div className="empty-results">

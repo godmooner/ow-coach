@@ -19,21 +19,22 @@ export function filterRecommendations(results: Recommendation[], preferredIds: r
   });
 }
 
-export type MostRecommendation = Recommendation & { mostRank: number };
+export type MostRecommendation = Recommendation & { mostRank?: number; isPossible: boolean };
 
 export function selectMostRecommendations(results: Recommendation[], selection: MostSelection, role: Role): {
   primary: MostRecommendation[];
   alternative: Recommendation | null;
 } {
-  const topIds = selection.top.filter((id): id is string => id !== null && selection.ids.includes(id));
-  if (topIds.length === 0) return { primary: [], alternative: null };
   const candidates = results.filter(result => result.hero.role === role);
-  const primary = filterRecommendations(candidates, topIds).map(result => ({
-    ...result, mostRank: selection.top.indexOf(result.hero.id) + 1,
-  }));
-  const showAlternative = primary.length > 0 && primary.every(result => gradeForScore(result.score, role).level <= 4);
-  const possible = new Set(selection.ids.filter(id => !topIds.includes(id)));
+  const preferredIds = candidates.filter(result => selection.ids.includes(result.hero.id)).map(result => result.hero.id);
+  const configured = preferredIds.length > 0;
+  const primary = filterRecommendations(candidates, preferredIds).slice(0, 3).map(result => {
+    const topIndex = configured ? selection.top.indexOf(result.hero.id) : -1;
+    return { ...result, mostRank: topIndex < 0 ? undefined : topIndex + 1, isPossible: configured && topIndex < 0 };
+  });
+  const showAlternative = configured && primary.length > 0 && primary.every(result => gradeForScore(result.score, role).level <= 2);
   // Input is already score-sorted by the engine; preserve its stable tie order.
-  const alternative = showAlternative ? candidates.find(result => possible.has(result.hero.id)) ?? null : null;
+  const best = candidates[0];
+  const alternative = showAlternative && best && !primary.some(result => result.hero.id === best.hero.id) ? best : null;
   return { primary, alternative };
 }
