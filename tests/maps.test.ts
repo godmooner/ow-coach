@@ -10,6 +10,8 @@ const heroes: Hero[] = read('../data/build/heroes.json');
 const matchups: Matchups = read('../data/build/matchups.json');
 const maps: { id: string; name_ko: string; mode: string }[] = read('../data/build/maps.json');
 const mapScores: MapScores = read('../data/build/map_scores.json');
+const historicalMatchups: Matchups = read('./fixtures/matchups-v1.0.1.json');
+const historicalWeights = read('./fixtures/weights-v1.0.1.json');
 const enemies = ['dmon', 'ashe', 'genji', 'ana', 'mercy'];
 const roles: Role[] = ['tank', 'damage', 'support'];
 
@@ -39,26 +41,26 @@ test('new grade calibration matches both default block weights and default enemy
   assert.deepEqual(cuts.enemy_weight, ENEMY_WEIGHT);
 });
 
-test('without a map and with default weights all scores and ranks exactly match MVP 0.5', () => {
+test('without a map and with historical data/weights all scores and ranks exactly match MVP 0.5', () => {
   const baseline: { cases: { enemies: string[]; results: Record<Role, [string, number, number][]> }[] } = read('./fixtures/recommend-v0.5.json');
   assert.equal(new Set(baseline.cases.flatMap(item => item.enemies)).size, 53);
   for (const item of baseline.cases) {
     for (const role of roles) {
-      for (const options of [undefined, { mapId: null, mapScores, weights: defaultWeights() }]) {
-        const rows = recommend(heroes, matchups, item.enemies, role, options);
+      for (const options of [{ weights: historicalWeights }, { mapId: null, mapScores, weights: historicalWeights }]) {
+        const rows = recommend(heroes, historicalMatchups, item.enemies, role, options);
         assert.deepEqual(rows.map(row => [row.hero.id, row.score, row.rank]), item.results[role]);
       }
     }
   }
 });
 
-test('a real map contributes 0.3 times its score to the real matchup subtotal', () => {
-  // Widowmaker: 5 matchup points; Havana +3, Antarctic Peninsula -3.
+test('a real map contributes 0.6 times its score to the real matchup subtotal', () => {
+  // Widowmaker: 2×1.5 + 0 - 3 + 2 + 2 = 4; Havana +3, Antarctic Peninsula -3.
   const score = (mapId: string) => recommend(heroes, matchups, enemies, 'damage', { mapId, mapScores }).find(row => row.hero.id === 'widowmaker')!.score;
   assert.equal(mapScores.widowmaker.havana, 3);
   assert.equal(mapScores.widowmaker['antarctic-peninsula'], -3);
-  assert.equal(score('havana'), 5.9);
-  assert.equal(score('antarctic-peninsula'), 4.1);
+  assert.equal(score('havana'), 5.8);
+  assert.equal(score('antarctic-peninsula'), 2.2);
 });
 
 test('runtime enemy and block weights affect only their specified terms and preserve fractions', () => {
@@ -70,8 +72,8 @@ test('runtime enemy and block weights affect only their specified terms and pres
   // (0.5×4.5 - 1 + 2 - 2 + 3)×0.5 + (-1.5)×2 = -0.875.
   const rows = recommend(heroes, fixture, enemies, 'damage', { mapId: 'havana', mapScores: { hanzo: { havana: -1.5 } }, weights });
   assert.equal(rows.find(row => row.hero.id === 'hanzo')!.score, -0.875);
-  assert.deepEqual(ENEMY_WEIGHT.damage, { tank: 2, damage: 1, support: 1 });
-  assert.deepEqual(BLOCK_WEIGHT, { matchup: 1, synergy: 0, map: 0.3 });
+  assert.deepEqual(ENEMY_WEIGHT.damage, { tank: 1.5, damage: 1, support: 1 });
+  assert.deepEqual(BLOCK_WEIGHT, { matchup: 1, synergy: 0, map: 0.6 });
 });
 
 test('each role uses its own adjustable enemy-tank multiplier', () => {
@@ -110,6 +112,7 @@ test('missing map relations add zero, mirrors remain zero, and incomplete teams 
 test('decimal-weight arithmetic does not split mathematically equal scores into different ranks', () => {
   const weights = defaultWeights();
   weights.block.matchup = 0.1;
+  weights.enemy.damage.tank = 2;
   weights.block.map = 0.3;
   const rows = recommend(heroes, { hanzo: { dmon: 1.5 } }, enemies, 'damage', { mapId: 'havana', mapScores: { widowmaker: { havana: 1 } }, weights });
   const tied = rows.filter(row => ['hanzo', 'widowmaker'].includes(row.hero.id));
@@ -118,6 +121,6 @@ test('decimal-weight arithmetic does not split mathematically equal scores into 
 });
 
 test('the block composition includes a reserved synergy term without changing current defaults', () => {
-  assert.equal(combineScoreBlocks({ matchup: 4, synergy: 5, map: -2 }), 3.4);
+  assert.equal(combineScoreBlocks({ matchup: 4, synergy: 5, map: -2 }), 2.8);
   assert.equal(combineScoreBlocks({ matchup: 4, synergy: 5, map: -2 }, { matchup: 0.5, synergy: 1, map: 0.3 }), 6.4);
 });

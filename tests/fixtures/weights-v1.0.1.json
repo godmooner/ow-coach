@@ -1,0 +1,8 @@
+{
+  "block": { "matchup": 1, "synergy": 0, "map": 0.3 },
+  "enemy": {
+    "tank": { "tank": 3, "damage": 1, "support": 1 },
+    "damage": { "tank": 2, "damage": 1, "support": 1 },
+    "support": { "tank": 2, "damage": 1, "support": 1 }
+  }
+}

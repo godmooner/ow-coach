@@ -1,69 +1,159 @@
 {
- "note": "역할별 등급 경계. 점수가 cuts[i] 이하면 labels[i], 전부 초과면 마지막 라벨.",
- "labels": [
-  "매우 불리",
-  "불리",
-  "약간 불리",
-  "중립",
-  "약간 유리",
-  "유리",
-  "매우 유리"
- ],
- "enemy_weight": {
-  "tank": {
-   "tank": 3,
-   "damage": 1,
-   "support": 1
+  "version": "1.5.0",
+  "labels": [
+    "매우 불리",
+    "불리",
+    "약간 불리",
+    "중립",
+    "약간 유리",
+    "유리",
+    "매우 유리"
+  ],
+  "percentiles": [
+    5,
+    20,
+    40,
+    60,
+    80,
+    95
+  ],
+  "samples": 30000,
+  "block_weight": {
+    "matchup": 1,
+    "synergy": 0,
+    "map": 0.6
   },
-  "damage": {
-   "tank": 2,
-   "damage": 1,
-   "support": 1
+  "enemy_weight": {
+    "tank": {
+      "tank": 2,
+      "damage": 1,
+      "support": 1
+    },
+    "damage": {
+      "tank": 1.5,
+      "damage": 1,
+      "support": 1
+    },
+    "support": {
+      "tank": 1.5,
+      "damage": 1,
+      "support": 1
+    }
   },
-  "support": {
-   "tank": 2,
-   "damage": 1,
-   "support": 1
+  "cuts": {
+    "tank": [
+      -8.4,
+      -4.22,
+      -1.08,
+      1.62,
+      4.72,
+      8.82
+    ],
+    "damage": [
+      -7.76,
+      -3.62,
+      -0.52,
+      2.1,
+      5.12,
+      8.96
+    ],
+    "support": [
+      -8.42,
+      -4.88,
+      -2.12,
+      0.36,
+      3.14,
+      6.58
+    ]
+  },
+  "calibration": {
+    "seed": 20260921,
+    "rng": "xorshift32",
+    "enemy_sampling": "uniform roles 1/2/2, without replacement within role",
+    "map_sampling": "cycle all maps evenly in maps.json order",
+    "candidate_sampling": "every hero in each role; no most filtering",
+    "quantile": "nearest rank, rounded to 2 decimals; equality belongs to the lower grade",
+    "no_map": "same fixed cuts; missing map contributes zero",
+    "interpretation": "scenario-score percentiles, not win probabilities"
+  },
+  "distribution": {
+    "tank": {
+      "count": 450000,
+      "min": -18.8,
+      "max": 18.8,
+      "mean": 0.261957,
+      "grade_counts": [
+        22570,
+        67667,
+        89930,
+        89959,
+        90194,
+        67239,
+        22441
+      ],
+      "grade_percentages": [
+        5.016,
+        15.037,
+        19.984,
+        19.991,
+        20.043,
+        14.942,
+        4.987
+      ]
+    },
+    "damage": {
+      "count": 720000,
+      "min": -17.3,
+      "max": 18.18,
+      "mean": 0.729256,
+      "grade_counts": [
+        36174,
+        108085,
+        144432,
+        143533,
+        144476,
+        107615,
+        35685
+      ],
+      "grade_percentages": [
+        5.024,
+        15.012,
+        20.06,
+        19.935,
+        20.066,
+        14.947,
+        4.956
+      ]
+    },
+    "support": {
+      "count": 420000,
+      "min": -17.52,
+      "max": 17.04,
+      "mean": -0.8911,
+      "grade_counts": [
+        21111,
+        63608,
+        83730,
+        84095,
+        83528,
+        63067,
+        20861
+      ],
+      "grade_percentages": [
+        5.026,
+        15.145,
+        19.936,
+        20.023,
+        19.888,
+        15.016,
+        4.967
+      ]
+    }
+  },
+  "source_sha256": {
+    "heroes.json": "d0a7fced83998b229553ec946d1996d1d86a095153cae20c2610ec1cabbb9a23",
+    "matchups.json": "2c150cb5d38126238bac903dc708da33922e908750ef2eaf71ad5960575c4a79",
+    "maps.json": "1b69af3d6388716964167144536070eff1d6aeedd16f6322e74a9cbce7a8bdf7",
+    "map_scores.json": "db93adb353b2ae3f45a84414e142e54f4c3d0902b5e18f50ee79a98588ef2bec"
   }
- },
- "percentiles": [
-  5,
-  20,
-  40,
-  60,
-  80,
-  95
- ],
- "samples": 8000,
- "cuts": {
-  "tank": [
-   -10.4,
-   -5.2,
-   -1.2,
-   2.1,
-   5.8,
-   10.8
-  ],
-  "damage": [
-   -8.6,
-   -4.1,
-   -0.6,
-   2.3,
-   5.7,
-   9.9
-  ],
-  "support": [
-   -9.4,
-   -5.6,
-   -2.3,
-   0.4,
-   3.7,
-   7.3
-  ]
- },
- "block_weight": {
-  "matchup": 1.0,
-  "synergy": 0.0,
-  "map": 0.3
- }
 }

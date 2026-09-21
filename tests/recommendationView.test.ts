@@ -68,6 +68,6 @@ test('grades stay absolute even when preferences make a weak hero the number-one
   assert.equal(filtered[0].rank, 1);
   assert.deepEqual(gradeForScore(filtered[0].score, 'damage'), gradeForScore(weak.score, 'damage'));
   assert.notEqual(gradeForScore(filtered[0].score, 'damage').label, '매우 유리');
-  assert.equal(gradeForScore(0.4, 'support').label, '중립');
-  assert.equal(gradeForScore(0.4001, 'support').label, '약간 유리');
+  assert.equal(gradeForScore(gradeCuts.cuts.support[3], 'support').label, '중립');
+  assert.equal(gradeForScore(gradeCuts.cuts.support[3] + 0.0001, 'support').label, '약간 유리');
 });

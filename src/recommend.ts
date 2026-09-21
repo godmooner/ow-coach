@@ -7,11 +7,11 @@ export type ScoringWeights = { block: ScoreBlocks; enemy: Record<Role, Record<Ro
 export type RecommendationOptions = { mapId?: string | null; mapScores?: MapScores; weights?: ScoringWeights };
 export type Recommendation = { hero: Hero; score: number; rank: number };
 export const ROLE_LIMITS: Record<Role, number> = { tank: 1, damage: 2, support: 2 };
-export const BLOCK_WEIGHT: ScoreBlocks = { matchup: 1, synergy: 0, map: 0.3 };
+export const BLOCK_WEIGHT: ScoreBlocks = { matchup: 1, synergy: 0, map: 0.6 };
 export const ENEMY_WEIGHT: Record<Role, Record<Role, number>> = {
-  tank: { tank: 3, damage: 1, support: 1 },
-  damage: { tank: 2, damage: 1, support: 1 },
-  support: { tank: 2, damage: 1, support: 1 },
+  tank: { tank: 2, damage: 1, support: 1 },
+  damage: { tank: 1.5, damage: 1, support: 1 },
+  support: { tank: 1.5, damage: 1, support: 1 },
 };
 
 export function toggleHero(selected: string[], hero: Hero, heroes: Hero[]): string[] {

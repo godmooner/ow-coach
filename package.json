@@ -1,6 +1,6 @@
 {
   "name": "ow-coach",
-  "version": "1.0.1",
+  "version": "1.5.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,9 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "portable": "node scripts/build_portable.mjs",
-    "data:from-csv": "python3 scripts/csv_to_json.py"
+    "data:from-csv": "python3 scripts/csv_to_json.py",
+    "grades:calibrate": "node --experimental-strip-types scripts/calibrate_grades.ts",
+    "grades:check": "node --experimental-strip-types scripts/calibrate_grades.ts --check"
   },
   "dependencies": {
     "react": "^19.2.0",
