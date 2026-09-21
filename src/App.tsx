@@ -3,14 +3,16 @@ import heroData from '../data/build/heroes.json';
 import matchupData from '../data/build/matchups.json';
 import mapData from '../data/build/maps.json';
 import mapScoreData from '../data/build/map_scores.json';
-import { ROLE_LIMITS, recommend, toggleHero } from './recommend';
+import { recommend, toggleHero } from './recommend';
 import type { Hero, Role, Matchups, MapScores } from './recommend';
-import { Portrait, RoleIcon } from './HeroVisuals';
+import { RoleIcon } from './HeroVisuals';
 import { MostPicker, MostSummary } from './MostPicker';
 import { emptyMostByRole, loadMost, saveMost } from './most';
 import { selectMostRecommendations } from './recommendationView';
 import { RecommendationCard } from './RecommendationCard';
 import { MapPicker } from './MapPicker';
+import { TeamPicker } from './TeamPicker';
+import { reconcileAllies, toggleAlly } from './allySelection';
 import { WeightSettings } from './WeightSettings';
 import { defaultWeights, loadWeights, saveWeights } from './weights';
 
@@ -18,11 +20,14 @@ const heroes = heroData as Hero[];
 const matchups: Matchups = matchupData;
 const mapScores: MapScores = mapScoreData;
 const roles: Role[] = ['tank', 'damage', 'support'];
+type ActiveInput = 'map' | 'enemy' | 'ally' | null;
 const roleNames: Record<Role, string> = { tank: '탱커', damage: '딜러', support: '힐러' };
 
 export default function App() {
   const [myRole, setMyRole] = useState<Role | null>(null);
   const [editingMostRole, setEditingMostRole] = useState<Role | null>(null);
+  const [activeInput, setActiveInput] = useState<ActiveInput>('map');
+  const [allyIds, setAllyIds] = useState<string[]>([]);
   const [selectedMapId, setSelectedMapId] = useState<string | null>(null);
   const selectedMap = mapData.find(map => map.id === selectedMapId);
   const [weights, setWeights] = useState(() => {
@@ -44,28 +49,44 @@ export default function App() {
     catch { setStorageAvailable(false); }
   }, [mostByRole]);
   const [selected, setSelected] = useState<string[]>([]);
-  const selectedHeroes = selected.map(id => heroes.find(hero => hero.id === id)!);
   const candidateCount = myRole ? mostByRole[myRole].ids.length || heroes.filter(hero => hero.role === myRole).length : 0;
   const { primary: results, alternative } = myRole ? selectMostRecommendations(recommend(heroes, matchups, selected, myRole,
     { mapId: selectedMapId, mapScores, weights }), mostByRole[myRole], myRole) : { primary: [], alternative: null };
   const complete = selected.length === 5;
-  const counts = Object.fromEntries(roles.map(role => [role, selectedHeroes.filter(hero => hero.role === role).length])) as Record<Role, number>;
-  const choose = (hero: Hero) => setSelected(previous => toggleHero(previous, hero, heroes));
+  const chooseEnemy = (hero: Hero) => {
+    const next = toggleHero(selected, hero, heroes);
+    setSelected(next);
+    setActiveInput(next.length === 5 ? null : 'enemy');
+  };
+  const chooseAlly = (hero: Hero) => {
+    if (!myRole) return;
+    const next = toggleAlly(allyIds, hero, heroes, myRole);
+    setAllyIds(next);
+    setActiveInput(next.length === 4 ? null : 'ally');
+  };
+  const toggleInput = (input: Exclude<ActiveInput, null>) => setActiveInput(previous => previous === input ? null : input);
+  const finishMap = () => setActiveInput(complete ? null : 'enemy');
+  const chooseRole = (role: Role) => {
+    setMyRole(role);
+    setEditingMostRole(null);
+    setAllyIds(previous => reconcileAllies(previous, heroes, role));
+    setActiveInput(selectedMapId ? (complete ? null : 'enemy') : 'map');
+  };
 
   return <div className="app-shell">
     <header className="topbar">
       <div className="brand"><span className="brand-mark" aria-hidden="true">OW</span><span>COACH</span><span className="brand-divider" /><span className="page-name">{editingMostRole ? `${roleNames[editingMostRole]} 모스트 선택` : myRole ? `${roleNames[myRole]} 추천` : '역할군 선택'}</span></div>
-      <span className="version-label">v1.5</span>
+      <span className="version-label">v1.5.1</span>
     </header>
     <WeightSettings weights={weights} storageAvailable={weightStorageAvailable} onChange={setWeights} />
 
     {myRole === null ? <main className="role-selection" aria-labelledby="role-selection-title">
       <span className="eyebrow">YOUR ROLE</span>
       <h1 id="role-selection-title">내 역할군을 선택하세요</h1>
-      <p>플레이할 역할군을 고른 뒤 상대 조합과 전장을 선택하세요.</p>
+      <p>플레이할 역할군을 고른 뒤 전장과 상대·아군 조합을 선택하세요.</p>
       <div className="role-options">
         {roles.map(role => <button key={role} type="button" className={`role-option ${role}`}
-          aria-label={`${roleNames[role]} 선택`} onClick={() => { setMyRole(role); setEditingMostRole(null); }}>
+          aria-label={`${roleNames[role]} 선택`} onClick={() => chooseRole(role)}>
           <RoleIcon role={role} /><span>{roleNames[role]}</span>
           <span className="role-option-count">{heroes.filter(hero => hero.role === role).length}명</span>
         </button>)}
@@ -73,7 +94,7 @@ export default function App() {
     </main> : <>
     <div className={`current-role ${myRole}`}>
       <span><RoleIcon role={myRole} />내 역할 · <strong>{roleNames[myRole]}</strong></span>
-      <button className="reset-button" type="button" onClick={() => { setMyRole(null); setEditingMostRole(null); }}>역할 바꾸기</button>
+      <button className="reset-button" type="button" data-testid="change-role" onClick={() => { setMyRole(null); setEditingMostRole(null); }}>역할 바꾸기</button>
     </div>
     {editingMostRole !== null ? <>
     <div className="most-role-tabs" role="group" aria-label="선호 영웅을 설정할 역할">
@@ -87,46 +108,16 @@ export default function App() {
     </> : <>
     <MostSummary heroes={heroes} selection={mostByRole[myRole]} onEdit={() => setEditingMostRole(myRole)} />
     <main className="workspace">
-      <section className="selection-panel" aria-labelledby="selection-title">
-        <div className="section-heading">
-          <div><span className="eyebrow">ENEMY TEAM</span><h1 id="selection-title">상대 조합</h1></div>
-          <div className="selection-actions"><span className={`selection-count ${complete ? 'complete' : ''}`} aria-live="polite">{selected.length}<span> / 5</span></span>
-          <button className="reset-button" onClick={() => setSelected([])} disabled={!selected.length}>
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 7a6 6 0 1 1-.3 5M4 3v4h4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>초기화
-          </button></div>
-        </div>
-
-        <div className="enemy-slots">
-          {roles.flatMap(role => Array.from({ length: ROLE_LIMITS[role] }, (_, index) => {
-            const hero = selectedHeroes.filter(item => item.role === role)[index];
-            return <button key={`${role}-${index}`} className={`enemy-slot ${role} ${hero ? 'filled' : ''}`}
-              aria-label={hero ? `${hero.name_ko} 선택 해제` : `${roleNames[role]} ${index + 1} 빈 슬롯`}
-              disabled={!hero} onClick={() => hero && choose(hero)}>
-              {hero ? <><Portrait hero={hero} /><span className="slot-remove" aria-hidden="true">×</span></> : <RoleIcon role={role} />}
-              <span className="slot-name">{hero ? hero.name_ko : roleNames[role]}</span>
-            </button>;
-          }))}
-        </div>
-        <p className="input-hint">초상화를 눌러 선택하고, 다시 눌러 해제하세요.</p>
-
-        <div className="roster">
-          {roles.map(role => <section key={role} className={`role-group ${role}`} aria-labelledby={`heading-${role}`}>
-            <div className="role-heading"><h2 id={`heading-${role}`}><RoleIcon role={role} />{roleNames[role]}</h2><span>{counts[role]} / {ROLE_LIMITS[role]}</span></div>
-            <div className="hero-grid">
-              {heroes.filter(hero => hero.role === role).map(hero => {
-                const active = selected.includes(hero.id);
-                const disabled = !active && counts[role] >= ROLE_LIMITS[role];
-                return <button key={hero.id} type="button" data-hero-id={hero.id}
-                  className={`hero-button ${active ? 'selected' : ''}`} aria-label={hero.name_ko} aria-pressed={active}
-                  disabled={disabled} onClick={() => choose(hero)}>
-                  <Portrait hero={hero} />{active && <span className="selected-tick" aria-hidden="true">✓</span>}
-                  <span className="hero-name">{hero.name_ko}</span>
-                </button>;
-              })}
-            </div>
-          </section>)}
-        </div>
-        <MapPicker maps={mapData} selectedId={selectedMapId} enabled={complete} onChange={setSelectedMapId} />
+      <section className="selection-panel" aria-label="전장과 상대·아군 조합 선택">
+        <MapPicker maps={mapData} selectedId={selectedMapId} expanded={activeInput === 'map'}
+          onToggle={() => toggleInput('map')} onContinue={finishMap}
+          onChange={id => { setSelectedMapId(id); finishMap(); }} />
+        <TeamPicker team="enemy" heroes={heroes} selected={selected} myRole={myRole} expanded={activeInput === 'enemy'}
+          onToggle={() => toggleInput('enemy')} onChoose={chooseEnemy} onDone={() => setActiveInput(null)}
+          onClear={() => { setSelected([]); setActiveInput('enemy'); }} />
+        <TeamPicker team="ally" heroes={heroes} selected={allyIds} myRole={myRole} expanded={activeInput === 'ally'}
+          onToggle={() => toggleInput('ally')} onChoose={chooseAlly} onDone={() => setActiveInput(null)}
+          onClear={() => { setAllyIds([]); setActiveInput('ally'); }} />
       </section>
 
       <aside className={`recommendation-panel ${complete ? 'ready' : ''}`} aria-labelledby="recommendation-title">
