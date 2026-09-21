@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { selectMostRecommendations } from '../src/recommendationView.ts';
 import type { Recommendation, Role } from '../src/recommend.ts';
 import type { MostSelection } from '../src/most.ts';
+import gradeCuts from '../data/build/grade_cuts.json' with { type: 'json' };
 
 const selection: MostSelection = { ids: ['first', 'second', 'third', 'possible-a', 'possible-b'], top: ['first', 'second', 'third'] };
 const row = (id: string, score: number, rank: number, role: Role = 'damage'): Recommendation => ({
@@ -20,7 +21,8 @@ test('main recommendations contain only explicit most picks, keep score order an
   assert.deepEqual(rows, before);
 });
 
-for (const [role, cutoff] of [['tank', 5.8], ['damage', 5.7], ['support', 3.7]] as const) {
+for (const role of ['tank', 'damage', 'support'] as const) {
+  const cutoff = gradeCuts.cuts[role][4];
   test(`${role}: the weakly-favorable boundary includes one possible pick; just above it hides the extra pick`, () => {
     const rows = [row('unselected', 20, 1, role), row('possible-a', 12, 2, role), row('possible-b', 10, 3, role),
       row('first', cutoff, 4, role), row('second', -3, 5, role), row('third', -5, 6, role)];

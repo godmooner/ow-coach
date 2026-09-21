@@ -18,7 +18,7 @@ test('custom weights round-trip through storage without changing defaults', () =
   saveWeights(weights, storage);
   assert.deepEqual(loadWeights(storage), weights);
   assert.equal(defaultWeights().block.matchup, 1);
-  assert.equal(defaultWeights().enemy.tank.tank, 3);
+  assert.equal(defaultWeights().enemy.tank.tank, 2);
 });
 
 test('each adjustable value activates the custom indicator and defaults clear it', () => {
@@ -46,7 +46,7 @@ test('restoration accepts range endpoints but rejects invalid values and ignores
     assert.equal(loadWeights(storageWith(JSON.stringify({ block: { matchup: value, map: 1.25 } }))).block.map, 1.25);
   }
   for (const value of [-0.5, 5.5, 0.25, '3', null, true]) {
-    assert.equal(loadWeights(storageWith(JSON.stringify({ enemy: { tank: { tank: value } } }))).enemy.tank.tank, 3);
+    assert.equal(loadWeights(storageWith(JSON.stringify({ enemy: { tank: { tank: value } } }))).enemy.tank.tank, 2);
   }
 });
 

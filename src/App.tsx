@@ -55,7 +55,7 @@ export default function App() {
   return <div className="app-shell">
     <header className="topbar">
       <div className="brand"><span className="brand-mark" aria-hidden="true">OW</span><span>COACH</span><span className="brand-divider" /><span className="page-name">{myRole ? `${roleNames[myRole]} ${selectingMost ? '모스트 선택' : '추천'}` : '역할군 선택'}</span></div>
-      <span className="version-label">v1.0.1</span>
+      <span className="version-label">v1.5</span>
     </header>
     <WeightSettings weights={weights} storageAvailable={weightStorageAvailable} onChange={setWeights} />
 
