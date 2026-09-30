@@ -41,7 +41,7 @@
 .selection-step h2{font-size:22px;font-weight:800;letter-spacing:-.6px;margin:3px 0 0}
 .selection-step .selection-actions{gap:14px}.selection-step .reset-button{white-space:nowrap}
 .map-selection .current-map{align-items:center;margin:0;min-height:30px;gap:10px;line-height:1.7}
-.current-map .selected-map-image{display:block;width:64px;height:38px;background:#30465e;border-radius:4px;overflow:hidden;flex-shrink:0;margin:0}
+.current-map .selected-map-image{display:block;width:121px;height:68px;background:#30465e;border-radius:4px;overflow:hidden;flex-shrink:0;margin:0}
 .selected-map-image>img{width:100%;height:100%;object-fit:cover}
 .map-selection:not(.expanded){display:flex;align-items:center;gap:22px}
 .map-selection:not(.expanded) .map-heading{display:contents}
@@ -62,5 +62,7 @@
 .picker-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.picker-heading p{color:var(--muted);font-size:12px}.picker-heading strong{color:var(--orange)}
 .hero-picker .roster{margin-top:0}.roster.two-roles{grid-template-columns:1.6fr 1fr}
 .picker-bottom-done{margin:20px 0 0 auto}
-@media(max-width:680px){.selection-step{padding:16px 12px;margin-bottom:12px}.selection-step h2{font-size:20px}.selection-step .selection-actions{gap:10px}.selection-step .eyebrow{font-size:10px;letter-spacing:1.2px}.team-slot{height:78px}.team-slot .slot-name{font-size:11px}.team-slot.filled>.portrait{width:100%;height:100%;margin:0}.team-note{align-items:flex-start}.team-note p{font-size:11px}.picker-heading{align-items:flex-start;gap:10px}.picker-heading p{max-width:220px;line-height:1.7}.roster.two-roles{grid-template-columns:1fr}.current-map .selected-map-image{width:56px;height:34px}}
-@media(max-width:680px){.map-selection:not(.expanded){gap:12px}.map-selection:not(.expanded) .eyebrow{display:none}.map-selection:not(.expanded) .current-map{gap:4px 8px}.map-selection:not(.expanded) .selected-map-image{display:none}}
+@media(max-width:680px){.selection-step{padding:16px 12px;margin-bottom:12px}.selection-step h2{font-size:20px}.selection-step .selection-actions{gap:10px}.selection-step .eyebrow{font-size:10px;letter-spacing:1.2px}.team-slot{height:78px}.team-slot .slot-name{font-size:11px}.team-slot.filled>.portrait{width:100%;height:100%;margin:0}.team-note{align-items:flex-start}.team-note p{font-size:11px}.picker-heading{align-items:flex-start;gap:10px}.picker-heading p{max-width:220px;line-height:1.7}.roster.two-roles{grid-template-columns:1fr}.current-map .selected-map-image{width:108px;height:61px}}
+@media(max-width:680px){.map-selection:not(.expanded){gap:12px}.map-selection:not(.expanded) .eyebrow{display:none}.map-selection:not(.expanded) .current-map{gap:4px 8px}.map-selection:not(.expanded){display:grid;grid-template-columns:minmax(0,1fr) auto}.map-selection:not(.expanded) .map-heading>button{grid-column:2;grid-row:1}.map-selection:not(.expanded) .current-map{grid-column:1/-1;grid-row:2}.map-selection:not(.expanded) .selected-map-image{display:block}}
+
+.score-breakdown{grid-column:1/-1;flex-basis:100%;display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:5px;color:var(--muted);font-size:11px;line-height:1.7;font-variant-numeric:tabular-nums}.score-breakdown strong{color:#b6c4d6;font-weight:500}.score-breakdown>span{white-space:nowrap}

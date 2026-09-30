@@ -26,6 +26,27 @@ export function combineScoreBlocks(blocks: ScoreBlocks, weights: ScoreBlocks = B
   return Number(total.toFixed(12));
 }
 
+export function scoreHero(hero: Hero, enemies: Hero[], matchups: Matchups, options: RecommendationOptions = {}): {
+  score: number; contributions: ScoreBlocks;
+} {
+  const blockWeight = options.weights?.block ?? BLOCK_WEIGHT;
+  const enemyWeight = options.weights?.enemy ?? ENEMY_WEIGHT;
+  const blocks: ScoreBlocks = {
+    matchup: enemies.reduce((sum, enemy) => sum + enemyWeight[hero.role][enemy.role] *
+      (hero.id === enemy.id ? 0 : matchups[hero.id]?.[enemy.id] ?? 0), 0),
+    synergy: 0, // Ally data is not connected yet.
+    map: options.mapId ? options.mapScores?.[hero.id]?.[options.mapId] ?? 0 : 0,
+  };
+  return {
+    score: combineScoreBlocks(blocks, blockWeight),
+    contributions: {
+      matchup: blockWeight.matchup * blocks.matchup,
+      synergy: blockWeight.synergy * blocks.synergy,
+      map: blockWeight.map * blocks.map,
+    },
+  };
+}
+
 export function recommend(heroes: Hero[], matchups: Matchups, enemyIds: string[], myRole: Role, options: RecommendationOptions = {}): Recommendation[] {
   if (enemyIds.length !== 5 || new Set(enemyIds).size !== 5) return [];
   const enemies = enemyIds.map(id => heroes.find(hero => hero.id === id));
@@ -33,17 +54,9 @@ export function recommend(heroes: Hero[], matchups: Matchups, enemyIds: string[]
   if ((Object.keys(ROLE_LIMITS) as Role[]).some(role =>
     enemies.filter(hero => hero?.role === role).length !== ROLE_LIMITS[role])) return [];
 
-  const blockWeight = options.weights?.block ?? BLOCK_WEIGHT;
-  const enemyWeight = options.weights?.enemy ?? ENEMY_WEIGHT;
   // Keep every hero in the selected role, even if some or all relations are missing.
   const sorted = heroes.filter(hero => hero.role === myRole).map((hero, order) => {
-    const blocks: ScoreBlocks = {
-      matchup: enemyIds.reduce((sum, enemyId, index) =>
-        sum + enemyWeight[myRole][enemies[index]!.role] * (hero.id === enemyId ? 0 : matchups[hero.id]?.[enemyId] ?? 0), 0),
-      synergy: 0, // Reserved for the ally-synergy subtotal when its data becomes available.
-      map: options.mapId ? options.mapScores?.[hero.id]?.[options.mapId] ?? 0 : 0,
-    };
-    return { hero, order, score: combineScoreBlocks(blocks, blockWeight) };
+    return { hero, order, score: scoreHero(hero, enemies as Hero[], matchups, options).score };
   }).sort((a, b) => b.score - a.score || a.order - b.order);
 
   let rank = 0;
@@ -55,5 +68,6 @@ export function recommend(heroes: Hero[], matchups: Matchups, enemyIds: string[]
 
 export function formatScore(score: number): string {
   const value = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 2 }).format(Math.abs(score));
+  if (value === '0') return '0';
   return score > 0 ? `+${value}` : score < 0 ? `−${value}` : '0';
 }
