@@ -3,7 +3,7 @@ import heroData from '../data/build/heroes.json';
 import matchupData from '../data/build/matchups.json';
 import mapData from '../data/build/maps.json';
 import mapScoreData from '../data/build/map_scores.json';
-import { recommend, toggleHero } from './recommend';
+import { recommend, scoreHero, toggleHero } from './recommend';
 import type { Hero, Role, Matchups, MapScores } from './recommend';
 import { RoleIcon } from './HeroVisuals';
 import { MostPicker, MostSummary } from './MostPicker';
@@ -49,9 +49,11 @@ export default function App() {
     catch { setStorageAvailable(false); }
   }, [mostByRole]);
   const [selected, setSelected] = useState<string[]>([]);
+  const selectedHeroes = selected.map(id => heroes.find(hero => hero.id === id)!);
+  const scoringOptions = { mapId: selectedMapId, mapScores, weights };
   const candidateCount = myRole ? mostByRole[myRole].ids.length || heroes.filter(hero => hero.role === myRole).length : 0;
   const { primary: results, alternative } = myRole ? selectMostRecommendations(recommend(heroes, matchups, selected, myRole,
-    { mapId: selectedMapId, mapScores, weights }), mostByRole[myRole], myRole) : { primary: [], alternative: null };
+    scoringOptions), mostByRole[myRole], myRole) : { primary: [], alternative: null };
   const complete = selected.length === 5;
   const chooseEnemy = (hero: Hero) => {
     const next = toggleHero(selected, hero, heroes);
@@ -76,7 +78,7 @@ export default function App() {
   return <div className="app-shell">
     <header className="topbar">
       <div className="brand"><span className="brand-mark" aria-hidden="true">OW</span><span>COACH</span><span className="brand-divider" /><span className="page-name">{editingMostRole ? `${roleNames[editingMostRole]} 모스트 선택` : myRole ? `${roleNames[myRole]} 추천` : '역할군 선택'}</span></div>
-      <span className="version-label">v1.5.1</span>
+      <span className="version-label">v1.5.2</span>
     </header>
     <WeightSettings weights={weights} storageAvailable={weightStorageAvailable} onChange={setWeights} />
 
@@ -126,11 +128,13 @@ export default function App() {
           {complete ? <>
             <div className="results-caption"><span>TOP {results.length}</span><span>등급 · 총점</span></div>
             {results.map((result, index) => <RecommendationCard key={result.hero.id} result={result}
+              contributions={scoreHero(result.hero, selectedHeroes, matchups, scoringOptions).contributions}
               mostRank={result.mostRank} isPossible={result.isPossible} first={index === 0} />)}
             {alternative && <section className="possible-recommendation" aria-label="전체 영웅 추가 추천">
               <div className="results-caption"><span>새로운 영웅 제안</span></div>
               <p className="most-help">선호 영웅 추천이 모두 ‘약간 불리’ 이하라 전체 영웅 중에서 제안합니다.</p>
-              <RecommendationCard result={alternative} alternative />
+              <RecommendationCard result={alternative} alternative
+                contributions={scoreHero(alternative.hero, selectedHeroes, matchups, scoringOptions).contributions} />
             </section>}
             <p className="tie-note">동점은 같은 순위로 표시합니다. 등급은 역할별 고정 기준입니다.</p>
           </> : <div className="empty-results">
